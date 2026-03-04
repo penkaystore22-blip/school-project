@@ -137,6 +137,7 @@ Public Sub AutoSetup()
     SeedClassesAndGrades
     SeedDefaultAdmin
     SeedFeeStructure
+    SeedDefaultSettings
     
     ' --- build dashboard ---
     Application.Run "BuildDashboard"
@@ -291,8 +292,9 @@ Private Sub SeedFeeStructure()
     Dim fAmtExam As Variant:     fAmtExam     = Array(500, 500, 800, 800, 800, 1000, 1000, 1000, 1500, 1500, 2000)
     Dim r As Long: r = 2
     Dim i As Long
+    Dim cls As String
     For i = LBound(classes) To UBound(classes)
-        Dim cls As String: cls = CStr(classes(i))
+        cls = CStr(classes(i))
         If fAmtTuition(i) > 0 Then
             ws.Cells(r, 1) = "FEE" & Format(r - 1, "000"): ws.Cells(r, 2) = "School Development Levy": ws.Cells(r, 3) = fAmtTuition(i): ws.Cells(r, 4) = cls: r = r + 1
         End If
@@ -300,6 +302,24 @@ Private Sub SeedFeeStructure()
         ws.Cells(r, 1) = "FEE" & Format(r - 1, "000"): ws.Cells(r, 2) = "Lunch Contribution":   ws.Cells(r, 3) = fAmtLunch(i):    ws.Cells(r, 4) = cls: r = r + 1
         ws.Cells(r, 1) = "FEE" & Format(r - 1, "000"): ws.Cells(r, 2) = "Exam & KNEC Fee":      ws.Cells(r, 3) = fAmtExam(i):     ws.Cells(r, 4) = cls: r = r + 1
     Next i
+End Sub
+
+' =============================================================
+'  HELPER: Seed default settings on first run
+' =============================================================
+Private Sub SeedDefaultSettings()
+    Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets(S_SETTINGS)
+    If ws.Cells(2, 1).Value <> "" Then Exit Sub  ' Already seeded
+    ' SettingKey | SettingValue | Description
+    ws.Cells(2, 1) = "SCHOOL_NAME":    ws.Cells(2, 2) = "MAGANA PRIMARY SCHOOL":  ws.Cells(2, 3) = "Name of the school displayed in reports and dashboard"
+    ws.Cells(3, 1) = "CURRENT_TERM":   ws.Cells(3, 2) = "Term 1":                ws.Cells(3, 3) = "Active academic term (Term 1, Term 2, Term 3)"
+    ws.Cells(4, 1) = "CURRENT_YEAR":   ws.Cells(4, 2) = "2026":                  ws.Cells(4, 3) = "Active academic year"
+    ws.Cells(5, 1) = "AUTO_BACKUP":    ws.Cells(5, 2) = "YES":                   ws.Cells(5, 3) = "Auto-backup on close (YES/NO). Backs up every 4 hours."
+    ws.Cells(6, 1) = "BACKUP_KEEP":    ws.Cells(6, 2) = "10":                    ws.Cells(6, 3) = "Maximum number of backup files to keep (oldest purged)"
+    ws.Cells(7, 1) = "SCHOOL_MOTTO":   ws.Cells(7, 2) = "Education for All":     ws.Cells(7, 3) = "School motto shown on report cards"
+    ws.Cells(8, 1) = "SCHOOL_ADDRESS": ws.Cells(8, 2) = "P.O. Box 100, Kenya":   ws.Cells(8, 3) = "School postal address for official documents"
+    ws.Cells(9, 1) = "SCHOOL_PHONE":   ws.Cells(9, 2) = "0700-000-000":          ws.Cells(9, 3) = "School phone number"
+    ws.Cells(10, 1) = "SCHOOL_EMAIL":  ws.Cells(10, 2) = "info@magana.ac.ke":    ws.Cells(10, 3) = "School email address"
 End Sub
 
 ' =============================================================
@@ -856,94 +876,138 @@ End Sub
 '  FORM 5 – TEACHER / STAFF
 ' -------------------------------------------------------------
 Private Sub CreateTeacherForm()
-    Dim f As Object: Set f = AddForm("frmTeacher", "Staff Management", 520, 380)
+    Dim f As Object: Set f = AddForm("frmTeacher", "Staff Management", 560, 460)
     Dim d As Object: Set d = f.Designer
     
     ' === HEADER BAR ===
-    AL d, "lblT", "STAFF / TEACHER RECORDS", 0, 0, 520, 28, 12
+    AL d, "lblT", "STAFF / TEACHER RECORDS", 0, 0, 560, 28, 12
     d.Controls("lblT").Font.Bold = True: d.Controls("lblT").ForeColor = &HFFFFFF
     d.Controls("lblT").BackColor = &H5A3416: d.Controls("lblT").TextAlign = 2
     d.Controls("lblT").Font.Name = "Segoe UI"
-    AL d, "lblAcc2", "", 0, 28, 520, 2
+    AL d, "lblAcc2", "", 0, 28, 560, 2
     d.Controls("lblAcc2").BackColor = &HD4A537: d.Controls("lblAcc2").Caption = ""
     
+    ' === SEARCH BAR PANEL ===
+    AL d, "lblSrchBg", "", 20, 36, 520, 28
+    d.Controls("lblSrchBg").BackColor = &HF6F8FA: d.Controls("lblSrchBg").Caption = ""
+    d.Controls("lblSrchBg").BorderStyle = 1: d.Controls("lblSrchBg").BorderColor = &HD0D0D0
+    
+    Dim lSrchIco As Object: Set lSrchIco = d.Controls.Add("Forms.Label.1", "lblSrchIco")
+    lSrchIco.Caption = ChrW(9654) & " Search Staff:"
+    lSrchIco.Left = 30: lSrchIco.Top = 42: lSrchIco.Width = 90: lSrchIco.Height = 16: lSrchIco.Font.Size = 9: lSrchIco.Font.Bold = True: lSrchIco.BackStyle = 0: lSrchIco.ForeColor = &H444444
+    
+    AT d, "txtSearch", 125, 40, 270, 20
+    d.Controls("txtSearch").Font.Size = 9
+    AB d, "btnSearch", ChrW(9654) & " FIND", 405, 39, 80, 24, &HFB8C00, &HFFFFFF
+    d.Controls("btnSearch").Font.Size = 8: d.Controls("btnSearch").Font.Bold = True
+    AB d, "btnRst", "RESET", 490, 39, 48, 24, &H757575, &HFFFFFF
+    d.Controls("btnRst").Font.Size = 7
+    
     ' === STAFF TYPE TOGGLE PANEL ===
-    AL d, "lblTypHdr", "  STAFF TYPE", 20, 36, 480, 18, 9
+    AL d, "lblTypHdr", "  STAFF TYPE", 20, 72, 520, 18, 9
     d.Controls("lblTypHdr").Font.Bold = True: d.Controls("lblTypHdr").ForeColor = &HFFFFFF
     d.Controls("lblTypHdr").BackColor = &H1565C0: d.Controls("lblTypHdr").Font.Name = "Segoe UI"
     
     Dim optT As Object: Set optT = d.Controls.Add("Forms.OptionButton.1", "optTeacher")
-    optT.Left = 30: optT.Top = 60: optT.Width = 120: optT.Height = 20
+    optT.Left = 30: optT.Top = 96: optT.Width = 120: optT.Height = 20
     optT.Caption = " Teacher": optT.Value = True
     optT.Font.Size = 10: optT.Font.Bold = True: optT.Font.Name = "Segoe UI"
     optT.ForeColor = &H2E7D32
     
     Dim optS As Object: Set optS = d.Controls.Add("Forms.OptionButton.1", "optStaff")
-    optS.Left = 170: optS.Top = 60: optS.Width = 150: optS.Height = 20
+    optS.Left = 170: optS.Top = 96: optS.Width = 150: optS.Height = 20
     optS.Caption = " Support Staff": optS.Value = False
     optS.Font.Size = 10: optS.Font.Bold = True: optS.Font.Name = "Segoe UI"
     optS.ForeColor = &H5A3416
     
-    AL d, "lblTypDesc", "  Select the type of personnel record to create or manage.", 20, 82, 480, 14, 7
+    AL d, "lblTypDesc", "  Select the type of personnel record to create or manage.", 20, 118, 520, 14, 7
     d.Controls("lblTypDesc").ForeColor = &H888888: d.Controls("lblTypDesc").Font.Italic = True
     d.Controls("lblTypDesc").Font.Name = "Segoe UI"
     
     ' --- Margin: 20 ---
-    AL d, "la", "Staff ID", 20, 105, 70: AT d, "txtTID", 95, 103, 120
-    d.Controls("la").Font.Size = 9: d.Controls("txtTID").Height = 20
-    AL d, "lb", "Full Name", 20, 131, 70: AT d, "txtTN", 95, 129, 300
-    d.Controls("lb").Font.Size = 9: d.Controls("txtTN").Height = 20
+    AL d, "la", "Staff ID", 20, 141, 80: AT d, "txtTID", 105, 139, 120
+    d.Controls("la").Font.Size = 9: d.Controls("la").Font.Bold = True: d.Controls("la").ForeColor = &H444444: d.Controls("la").TextAlign = 3: d.Controls("la").BackStyle = 0
+    d.Controls("txtTID").Height = 20
     
-    AL d, "lc", "TSC Number", 20, 157, 70: AT d, "txtTSC", 95, 155, 120
-    d.Controls("lc").Font.Size = 8: d.Controls("txtTSC").Height = 20
-    AL d, "ld", "Phone No.", 230, 157, 70: AT d, "txtTP", 310, 155, 120
-    d.Controls("ld").Font.Size = 9: d.Controls("txtTP").Height = 20
+    AL d, "lb", "Full Name", 20, 167, 80: AT d, "txtTN", 105, 165, 350
+    d.Controls("lb").Font.Size = 9: d.Controls("lb").Font.Bold = True: d.Controls("lb").ForeColor = &H444444: d.Controls("lb").TextAlign = 3: d.Controls("lb").BackStyle = 0
+    d.Controls("txtTN").Height = 20
     
-    AL d, "le", "Email Addr", 20, 183, 70: AT d, "txtTE", 95, 181, 300
-    d.Controls("le").Font.Size = 9: d.Controls("txtTE").Height = 20
+    AL d, "lc", "TSC Number", 20, 193, 80: AT d, "txtTSC", 105, 191, 140
+    d.Controls("lc").Font.Size = 8: d.Controls("lc").Font.Bold = True: d.Controls("lc").ForeColor = &H444444: d.Controls("lc").TextAlign = 3: d.Controls("lc").BackStyle = 0
+    d.Controls("txtTSC").Height = 20
+    AL d, "ld", "Phone No.", 270, 193, 70: AT d, "txtTP", 345, 191, 120
+    d.Controls("ld").Font.Size = 9: d.Controls("ld").Font.Bold = True: d.Controls("ld").ForeColor = &H444444: d.Controls("ld").TextAlign = 3: d.Controls("ld").BackStyle = 0
+    d.Controls("txtTP").Height = 20
+    
+    AL d, "le", "Email Addr", 20, 219, 80: AT d, "txtTE", 105, 217, 350
+    d.Controls("le").Font.Size = 9: d.Controls("le").Font.Bold = True: d.Controls("le").ForeColor = &H444444: d.Controls("le").TextAlign = 3: d.Controls("le").BackStyle = 0
+    d.Controls("txtTE").Height = 20
     
     ' --- Learning Area (for Teachers) ---
-    AL d, "lf", "Learning Area", 20, 209, 70: AC d, "cmbSub", 95, 207, 140
-    d.Controls("lf").Font.Size = 8: d.Controls("cmbSub").Height = 20
+    AL d, "lf", "Learning Area", 20, 245, 80: AC d, "cmbSub", 105, 243, 150
+    d.Controls("lf").Font.Size = 8: d.Controls("lf").Font.Bold = True: d.Controls("lf").ForeColor = &H444444: d.Controls("lf").TextAlign = 3: d.Controls("lf").BackStyle = 0
+    d.Controls("cmbSub").Height = 20
     
     ' --- Department (for Support Staff - hidden by default) ---
-    AL d, "lDept", "Department", 20, 209, 70
-    d.Controls("lDept").Font.Size = 8: d.Controls("lDept").Visible = False
-    AC d, "cmbDept", 95, 207, 140
+    AL d, "lDept", "Department", 20, 245, 80
+    d.Controls("lDept").Font.Size = 8: d.Controls("lDept").Font.Bold = True: d.Controls("lDept").ForeColor = &H444444: d.Controls("lDept").TextAlign = 3: d.Controls("lDept").BackStyle = 0
+    d.Controls("lDept").Visible = False
+    AC d, "cmbDept", 105, 243, 150
     d.Controls("cmbDept").Height = 20: d.Controls("cmbDept").Visible = False
     
-    AL d, "lg", "Join Date", 250, 209, 60: AT d, "txtJD", 320, 207, 100
-    d.Controls("lg").Font.Size = 9: d.Controls("txtJD").Height = 20
+    AL d, "lg", "Join Date", 280, 245, 60: AT d, "txtJD", 345, 243, 120
+    d.Controls("lg").Font.Size = 9: d.Controls("lg").Font.Bold = True: d.Controls("lg").ForeColor = &H444444: d.Controls("lg").TextAlign = 3: d.Controls("lg").BackStyle = 0
+    d.Controls("txtJD").Height = 20
     
-    ' === ACTION BUTTONS ===
-    AB d, "btnSave", "SAVE RECORD", 20, 245, 140, 30, &H2E7D32, &HFFFFFF
-    d.Controls("btnSave").Font.Size = 9
-    AB d, "btnFind", "FIND RECORD", 175, 245, 140, 30, &HFB8C00, &HFFFFFF
-    d.Controls("btnFind").Font.Size = 9
-    AB d, "btnDel", "DELETE", 330, 245, 110, 30, &HC62828, &HFFFFFF
-    d.Controls("btnDel").Font.Size = 9
+    ' === DIVIDER ===
+    AL d, "lblDiv1", "", 20, 274, 520, 1
+    d.Controls("lblDiv1").BackColor = &HD0D0D0: d.Controls("lblDiv1").Caption = ""
     
-    AB d, "btnRst", "RESET FORM", 20, 290, 100, 26, &H757575, &HFFFFFF
-    d.Controls("btnRst").Font.Size = 8
-    AB d, "btnCrtUsr", ChrW(9654) & " CREATE USER", 140, 290, 140, 26, &H4527A0, &HFFFFFF
+    ' === ACTION BUTTONS (Row 1: primary actions) ===
+    AB d, "btnSave", ChrW(10003) & " SAVE", 20, 284, 110, 30, &H2E7D32, &HFFFFFF
+    d.Controls("btnSave").Font.Size = 9: d.Controls("btnSave").Font.Bold = True
+    AB d, "btnUpdate", ChrW(8634) & " UPDATE", 140, 284, 110, 30, &H1F4E79, &HFFFFFF
+    d.Controls("btnUpdate").Font.Size = 9: d.Controls("btnUpdate").Font.Bold = True
+    AB d, "btnDel", ChrW(10005) & " DELETE", 260, 284, 110, 30, &HC62828, &HFFFFFF
+    d.Controls("btnDel").Font.Size = 9: d.Controls("btnDel").Font.Bold = True
+    AB d, "btnFind", ChrW(9654) & " FIND RECORD", 380, 284, 130, 30, &HFB8C00, &HFFFFFF
+    d.Controls("btnFind").Font.Size = 9: d.Controls("btnFind").Font.Bold = True
+    
+    ' === ACTION BUTTONS (Row 2: secondary) ===
+    AB d, "btnReset", "RESET FORM", 20, 325, 110, 26, &H757575, &HFFFFFF
+    d.Controls("btnReset").Font.Size = 8
+    AB d, "btnCrtUsr", ChrW(9654) & " CREATE USER", 150, 325, 140, 26, &H4527A0, &HFFFFFF
     d.Controls("btnCrtUsr").Font.Size = 8: d.Controls("btnCrtUsr").Font.Bold = True
-    AB d, "btnCls", "CLOSE", 340, 290, 100, 26, &H37474F, &HFFFFFF
+    AB d, "btnCls", "CLOSE", 400, 325, 110, 26, &H37474F, &HFFFFFF
     d.Controls("btnCls").Font.Size = 8
     
-    AL d, "lblSt", " Ready.", 20, 330, 480, 20, 9
+    ' === STATUS BAR ===
+    AL d, "lblSt", " Ready.", 20, 368, 520, 20, 9
     d.Controls("lblSt").BackColor = &HFFFFFF: d.Controls("lblSt").BorderStyle = 1
     d.Controls("lblSt").ForeColor = &H666666
     
-    Dim c$: c = "Option Explicit" & vbCrLf
-    c = c & "Private Sub UserForm_Initialize(): Call InitTeacherForm(Me): Call CenterForm(Me): End Sub" & vbCrLf
+    ' === USERFORM CODE ===
+    Dim c$: c = "Option Explicit" & vbCrLf & "Public CurrentRow As Long" & vbCrLf
+    c = c & "Private Sub UserForm_Initialize()" & vbCrLf
+    c = c & "  Call InitTeacherForm(Me)" & vbCrLf
+    c = c & "  CurrentRow = 0" & vbCrLf
+    c = c & "  Call CenterForm(Me)" & vbCrLf
+    c = c & "End Sub" & vbCrLf
     c = c & "Private Sub btnSave_Click(): Call SaveTeacher(Me):   End Sub" & vbCrLf
+    c = c & "Private Sub btnUpdate_Click(): Call UpdateTeacher(Me): End Sub" & vbCrLf
+    c = c & "Private Sub btnSearch_Click(): Call FindTeacher(Me): End Sub" & vbCrLf
     c = c & "Private Sub btnFind_Click(): Call FindTeacher(Me):   End Sub" & vbCrLf
     c = c & "Private Sub btnDel_Click():  Call DeleteTeacher(Me): End Sub" & vbCrLf
     c = c & "Private Sub btnRst_Click():  Call ResetTeacherForm(Me): End Sub" & vbCrLf
+    c = c & "Private Sub btnReset_Click(): Call ResetTeacherForm(Me): End Sub" & vbCrLf
     c = c & "Private Sub btnCls_Click():  Unload Me:              End Sub" & vbCrLf
     c = c & "Private Sub btnCrtUsr_Click(): Call CreateUserFromStaffForm(Me): End Sub" & vbCrLf
     c = c & "Private Sub optTeacher_Click(): Call ToggleStaffType(Me, True): End Sub" & vbCrLf
     c = c & "Private Sub optStaff_Click(): Call ToggleStaffType(Me, False): End Sub" & vbCrLf
+    c = c & "Private Sub txtSearch_KeyDown(ByVal kc As MSForms.ReturnInteger, ByVal Sh As Integer)" & vbCrLf
+    c = c & "  If kc = 13 Then Call FindTeacher(Me)" & vbCrLf
+    c = c & "End Sub" & vbCrLf
     f.CodeModule.AddFromString c
 End Sub
 
@@ -986,38 +1050,236 @@ End Sub
 ' -------------------------------------------------------------
 '  FORM 7 – DATABASE BROWSER
 ' -------------------------------------------------------------
+' -------------------------------------------------------------
+'  FORM 7 â€“ DATABASE BROWSER  (Professional Rebuild)
+' -------------------------------------------------------------
 Private Sub CreateDatabaseForm()
-    Dim f As Object: Set f = AddForm("frmDatabase", "System Database Browser", 640, 440)
+    Dim f As Object: Set f = AddForm("frmDatabase", "System Database Browser", 740, 540)
     Dim d As Object: Set d = f.Designer
-    
-    ' === HEADER BAR ===
-    AL d, "lblT", "DATABASE BROWSER", 0, 0, 640, 28, 12
-    d.Controls("lblT").Font.Bold = True: d.Controls("lblT").ForeColor = &HFFFFFF
-    d.Controls("lblT").BackColor = &H3E2723: d.Controls("lblT").TextAlign = 2
-    d.Controls("lblT").Font.Name = "Segoe UI"
-    
-    ' --- Margin: 20 ---
-    AL d, "la", "Select Data Table:", 20, 47, 120: AC d, "cmbTbl", 140, 45, 200
-    d.Controls("la").Font.Size = 9: d.Controls("cmbTbl").Height = 22
-    AB d, "btnLoad", "LOAD TABLE DATA", 355, 44, 130, 24, &H3E2723, &HFFFFFF
-    d.Controls("btnLoad").Font.Size = 8
-    AB d, "btnExport", "EXPORT TO CSV", 495, 44, 125, 24, &H2E7D32, &HFFFFFF
-    d.Controls("btnExport").Font.Size = 8
-    
-    Dim lSt As Object: Set lSt = d.Controls.Add("Forms.ListBox.1", "lstData")
-    lSt.Left = 20: lSt.Top = 80: lSt.Width = 600: lSt.Height = 290
-    lSt.ColumnCount = 10: lSt.Font.Size = 9: lSt.Font.Name = "Consolas": lSt.BorderStyle = 1
-    
-    AB d, "btnCls", "CLOSE WINDOW", 260, 385, 120, 28, &H37474F, &HFFFFFF
-    d.Controls("btnCls").Font.Size = 9
-    
+    f.Properties("BackColor") = &HFAFAFA
+    f.Properties("ScrollBars") = 0
+
+    ' --- Layout constants with proper margins ---
+    ' NOTE: VBA form Height includes title bar (~28pt), so internal ≈ 510.
+    '       We calculate from intH=500 to guarantee a safe bottom margin.
+    Dim fW As Single: fW = 724     ' usable form width
+    Dim intH As Single: intH = 500 ' conservative internal height
+    Dim lpW As Single: lpW = 160   ' left panel width
+    Dim rpL As Single: rpL = 162   ' right panel left (lpW + 2 divider)
+    Dim rpW As Single: rpW = fW - rpL  ' right panel width (~562)
+    Dim hdrH As Single: hdrH = 30  ' header height
+    Dim accH As Single: accH = 2   ' accent bar
+    Dim tbH As Single: tbH = 40    ' toolbar height (comfortable)
+    Dim pagH As Single: pagH = 26  ' pagination bar (comfortable)
+    Dim stH As Single: stH = 20    ' status bar
+    Dim panTop As Single: panTop = hdrH + accH  ' 32
+    Dim tbTop As Single: tbTop = panTop
+    Dim tbDivY As Single: tbDivY = tbTop + tbH
+    Dim fraTop As Single: fraTop = tbDivY + 1
+    Dim stY As Single: stY = intH - stH          ' status bar top = 480
+    Dim pagY As Single: pagY = stY - pagH - 2     ' pagination top = 452
+    Dim fraH As Single: fraH = pagY - fraTop - 2   ' data area height
+    Dim panH As Single: panH = stY + stH - panTop
+
+    ' === HEADER ===
+    AL d, "lblT", "  " & ChrW(9679) & "  SYSTEM DATABASE BROWSER", 0, 0, fW, hdrH, 11
+    With d.Controls("lblT")
+        .Font.Bold = True: .ForeColor = &HFFFFFF: .BackColor = &H3E2723
+        .Font.Name = "Segoe UI": .TextAlign = 1
+    End With
+    AL d, "lblAcc", "", 0, hdrH, fW, accH
+    d.Controls("lblAcc").BackColor = &HD4A537: d.Controls("lblAcc").Caption = ""
+
+    ' === LEFT PANEL ===
+    AL d, "lblPanel", "", 0, panTop, lpW, panH
+    d.Controls("lblPanel").BackColor = &HF0F0F0: d.Controls("lblPanel").Caption = ""
+
+    AL d, "lblPanHdr", "  " & ChrW(9776) & "  TABLES", 0, panTop, lpW, 22, 9
+    With d.Controls("lblPanHdr")
+        .Font.Bold = True: .ForeColor = &HFFFFFF: .BackColor = &H5D4037
+    End With
+
+    AT d, "txtTblSearch", 4, panTop + 26, lpW - 28, 20
+    d.Controls("txtTblSearch").Font.Size = 9
+
+    AB d, "btnTblFind", ChrW(9654), lpW - 22, panTop + 25, 20, 22, &H795548, &HFFFFFF
+    d.Controls("btnTblFind").Font.Size = 9
+
+    Dim lTbl As Object: Set lTbl = d.Controls.Add("Forms.ListBox.1", "lstTables")
+    lTbl.Left = 2: lTbl.Top = panTop + 50: lTbl.Width = lpW - 4: lTbl.Height = panH - 52
+    lTbl.Font.Size = 9: lTbl.Font.Name = "Segoe UI"
+    lTbl.BorderStyle = 0: lTbl.BackColor = &HF0F0F0
+
+    ' === VERTICAL DIVIDER ===
+    AL d, "lblVDiv", "", lpW, panTop, 2, panH
+    d.Controls("lblVDiv").BackColor = &HDADADA: d.Controls("lblVDiv").Caption = ""
+
+    ' === TOOLBAR ===
+    AL d, "lblTbBg", "", rpL, tbTop, rpW, tbH
+    d.Controls("lblTbBg").BackColor = &HFFFFFF: d.Controls("lblTbBg").Caption = ""
+
+    Dim tbY As Single: tbY = tbTop + 10  ' button vertical center
+
+    AL d, "lblSrch", ChrW(9906) & " Search:", rpL + 8, tbY + 2, 52, 16, 8
+    d.Controls("lblSrch").ForeColor = &H555555: d.Controls("lblSrch").BackStyle = 0: d.Controls("lblSrch").Font.Bold = True
+
+    AT d, "txtSearch", rpL + 62, tbY, 150, 20
+    d.Controls("txtSearch").Font.Size = 9
+
+    ' --- Action buttons with comfortable spacing ---
+    Dim bx As Single: bx = rpL + 218
+    AB d, "btnFind", ChrW(9654) & " FIND", bx, tbY, 52, 22, &H3E2723, &HFFFFFF
+    d.Controls("btnFind").Font.Size = 8: d.Controls("btnFind").Font.Bold = True
+
+    AB d, "btnClear", "CLEAR", bx + 56, tbY, 46, 22, &H9E9E9E, &HFFFFFF
+    d.Controls("btnClear").Font.Size = 8
+
+    AB d, "btnExport", ChrW(8659) & " CSV", bx + 106, tbY, 50, 22, &H2E7D32, &HFFFFFF
+    d.Controls("btnExport").Font.Size = 8: d.Controls("btnExport").Font.Bold = True
+
+    AB d, "btnDelRow", ChrW(10005) & " ROW", bx + 160, tbY, 50, 22, &HC62828, &HFFFFFF
+    d.Controls("btnDelRow").Font.Size = 8: d.Controls("btnDelRow").Font.Bold = True
+
+    AB d, "btnRefresh", ChrW(8635) & " REFRESH", bx + 214, tbY, 64, 22, &H1565C0, &HFFFFFF
+    d.Controls("btnRefresh").Font.Size = 8: d.Controls("btnRefresh").Font.Bold = True
+
+    AB d, "btnPrint", ChrW(9113) & " PRINT", bx + 282, tbY, 56, 22, &H5A3416, &HFFFFFF
+    d.Controls("btnPrint").Font.Size = 8: d.Controls("btnPrint").Font.Bold = True
+
+    AL d, "lblTbDiv", "", rpL, tbDivY, rpW, 1
+    d.Controls("lblTbDiv").BackColor = &HD0D0D0: d.Controls("lblTbDiv").Caption = ""
+
+    ' === SCROLLABLE DATA FRAME ===
+    Dim fra As Object: Set fra = d.Controls.Add("Forms.Frame.1", "fraData")
+    fra.Left = rpL: fra.Top = fraTop: fra.Width = rpW: fra.Height = fraH
+    fra.BorderStyle = 0: fra.Caption = ""
+    fra.ScrollBars = 1  ' fmScrollBarsHorizontal
+    fra.ScrollWidth = rpW
+    fra.KeepScrollBarsVisible = 0
+    fra.BackColor = &HFFFFFF
+
+    Dim lHdr As Object: Set lHdr = fra.Controls.Add("Forms.ListBox.1", "lstHeaders")
+    lHdr.Left = 0: lHdr.Top = 0: lHdr.Width = rpW: lHdr.Height = 20
+    lHdr.Font.Bold = True: lHdr.ForeColor = &HFFFFFF: lHdr.BackColor = &H5D4037
+    lHdr.Font.Name = "Consolas": lHdr.Font.Size = 9
+    lHdr.ColumnCount = 1: lHdr.IntegralHeight = False: lHdr.BorderStyle = 0
+
+    Dim lDat As Object: Set lDat = fra.Controls.Add("Forms.ListBox.1", "lstData")
+    lDat.Left = 0: lDat.Top = 20: lDat.Width = rpW: lDat.Height = fraH - 22
+    lDat.ColumnCount = 1
+    lDat.Font.Size = 9: lDat.Font.Name = "Consolas": lDat.BorderStyle = 0
+    lDat.BackColor = &HFFFFFF: lDat.IntegralHeight = False
+
+    ' === PAGINATION BAR ===
+    AL d, "lblPagBg", "", rpL, pagY, rpW, pagH
+    d.Controls("lblPagBg").BackColor = &HF5F5F5: d.Controls("lblPagBg").Caption = ""
+
+    AB d, "btnPrev", ChrW(9664) & " PREV", rpL + 6, pagY + 3, 60, 20, &H546E7A, &HFFFFFF
+    d.Controls("btnPrev").Font.Size = 8
+
+    AL d, "lblPage", "Page 1 / 1", rpL + 72, pagY + 5, 90, 16, 9
+    d.Controls("lblPage").TextAlign = 2: d.Controls("lblPage").ForeColor = &H444444: d.Controls("lblPage").BackStyle = 0
+
+    AB d, "btnNext", "NEXT " & ChrW(9654), rpL + 168, pagY + 3, 60, 20, &H546E7A, &HFFFFFF
+    d.Controls("btnNext").Font.Size = 8
+
+    AL d, "lblRCount", "0 records  |  0 columns", rpL + 240, pagY + 5, 180, 16, 9
+    d.Controls("lblRCount").ForeColor = &H888888: d.Controls("lblRCount").BackStyle = 0
+
+    AB d, "btnClose", ChrW(10005) & " CLOSE", rpL + rpW - 72, pagY + 3, 66, 20, &H37474F, &HFFFFFF
+    d.Controls("btnClose").Font.Size = 8: d.Controls("btnClose").Font.Bold = True
+
+    ' === STATUS BAR ===
+    AL d, "lblSt", "  " & ChrW(9679) & "  Ready - select a table from the left panel.", 0, stY, fW, stH, 9
+    d.Controls("lblSt").BackColor = &H3E2723: d.Controls("lblSt").ForeColor = &HFFFFFF
+
+    ' === USERFORM CODE (with Resize handler) ===
     Dim c$: c = "Option Explicit" & vbCrLf
-    c = c & "Private Sub UserForm_Initialize(): Call InitDbForm(Me): Call CenterForm(Me): End Sub" & vbCrLf
-    c = c & "Private Sub btnLoad_Click():   Call LoadTable(Me): End Sub" & vbCrLf
+    c = c & "Public CurPage  As Long" & vbCrLf
+    c = c & "Public TotalPages As Long" & vbCrLf
+    c = c & "Public PageSize As Long" & vbCrLf
+    c = c & "Private Sub UserForm_Initialize()" & vbCrLf
+    c = c & "  CurPage = 1: TotalPages = 1: PageSize = 50" & vbCrLf
+    c = c & "  Me.txtTblSearch.Value = ""Filter tables...""" & vbCrLf
+    c = c & "  Me.txtSearch.Value = ""Search all columns...""" & vbCrLf
+    c = c & "  Call InitDbForm(Me): Call CenterForm(Me)" & vbCrLf
+    c = c & "End Sub" & vbCrLf
+    ' --- Resize handler ---
+    c = c & "Private Sub UserForm_Resize()" & vbCrLf
+    c = c & "  On Error Resume Next" & vbCrLf
+    c = c & "  Dim fW As Single, fH As Single" & vbCrLf
+    c = c & "  Dim lpW As Single, rpL As Single, rpW As Single" & vbCrLf
+    c = c & "  Dim panTop As Single, tbH As Single, pagH As Single, stH As Single" & vbCrLf
+    c = c & "  Dim fraTop As Single, fraH As Single, pagY As Single, stY As Single, panH As Single" & vbCrLf
+    c = c & "  fW = Me.InsideWidth: fH = Me.InsideHeight" & vbCrLf
+    c = c & "  If fW < 400 Then fW = 400" & vbCrLf
+    c = c & "  If fH < 340 Then fH = 340" & vbCrLf
+    c = c & "  lpW = 160: rpL = 162: rpW = fW - rpL" & vbCrLf
+    c = c & "  panTop = 32: tbH = 40: pagH = 26: stH = 20" & vbCrLf
+    c = c & "  fraTop = panTop + tbH + 1" & vbCrLf
+    c = c & "  stY = fH - stH" & vbCrLf
+    c = c & "  pagY = stY - pagH - 2" & vbCrLf
+    c = c & "  fraH = pagY - fraTop - 2" & vbCrLf
+    c = c & "  If fraH < 60 Then fraH = 60" & vbCrLf
+    c = c & "  panH = stY + stH - panTop" & vbCrLf
+    ' Header
+    c = c & "  Me.lblT.Width = fW: Me.lblAcc.Width = fW" & vbCrLf
+    ' Left panel
+    c = c & "  Me.lblPanel.Height = panH: Me.lblPanHdr.Width = lpW" & vbCrLf
+    c = c & "  Me.lblVDiv.Height = panH" & vbCrLf
+    c = c & "  Me.lstTables.Height = panH - 52" & vbCrLf
+    ' Toolbar bg
+    c = c & "  Me.lblTbBg.Left = rpL: Me.lblTbBg.Width = rpW" & vbCrLf
+    c = c & "  Me.lblTbDiv.Left = rpL: Me.lblTbDiv.Width = rpW: Me.lblTbDiv.Top = panTop + tbH" & vbCrLf
+    ' Data frame
+    c = c & "  Me.fraData.Left = rpL: Me.fraData.Top = fraTop" & vbCrLf
+    c = c & "  Me.fraData.Width = rpW: Me.fraData.Height = fraH" & vbCrLf
+    ' Pagination bar
+    c = c & "  Me.lblPagBg.Left = rpL: Me.lblPagBg.Top = pagY: Me.lblPagBg.Width = rpW" & vbCrLf
+    c = c & "  Me.btnPrev.Top = pagY + 3: Me.btnPrev.Left = rpL + 6" & vbCrLf
+    c = c & "  Me.lblPage.Top = pagY + 5: Me.lblPage.Left = rpL + 72" & vbCrLf
+    c = c & "  Me.btnNext.Top = pagY + 3: Me.btnNext.Left = rpL + 168" & vbCrLf
+    c = c & "  Me.lblRCount.Top = pagY + 5: Me.lblRCount.Left = rpL + 240" & vbCrLf
+    c = c & "  Me.btnClose.Top = pagY + 3: Me.btnClose.Left = rpL + rpW - 72" & vbCrLf
+    ' Status bar
+    c = c & "  Me.lblSt.Top = stY: Me.lblSt.Width = fW" & vbCrLf
+    c = c & "  On Error GoTo 0" & vbCrLf
+    c = c & "End Sub" & vbCrLf
+    c = c & "Private Sub lstTables_Click(): Me.CurPage = 1: Call LoadTable(Me): End Sub" & vbCrLf
+    c = c & "Private Sub btnTblFind_Click(): Call FilterTableList(Me): End Sub" & vbCrLf
+    c = c & "Private Sub txtTblSearch_Enter()" & vbCrLf
+    c = c & "  If Me.txtTblSearch.Value = ""Filter tables..."" Then Me.txtTblSearch.Value = """"" & vbCrLf
+    c = c & "End Sub" & vbCrLf
+    c = c & "Private Sub txtTblSearch_Exit(ByVal Cancel As MSForms.ReturnBoolean)" & vbCrLf
+    c = c & "  If Trim(Me.txtTblSearch.Value) = """" Then Me.txtTblSearch.Value = ""Filter tables...""" & vbCrLf
+    c = c & "End Sub" & vbCrLf
+    c = c & "Private Sub txtSearch_Enter()" & vbCrLf
+    c = c & "  If Me.txtSearch.Value = ""Search all columns..."" Then Me.txtSearch.Value = """"" & vbCrLf
+    c = c & "End Sub" & vbCrLf
+    c = c & "Private Sub txtSearch_Exit(ByVal Cancel As MSForms.ReturnBoolean)" & vbCrLf
+    c = c & "  If Trim(Me.txtSearch.Value) = """" Then Me.txtSearch.Value = ""Search all columns...""" & vbCrLf
+    c = c & "End Sub" & vbCrLf
+    c = c & "Private Sub txtSearch_KeyDown(ByVal kc As MSForms.ReturnInteger, ByVal sh As Integer)" & vbCrLf
+    c = c & "  If kc = 13 Then Me.CurPage = 1: Call FilterTable(Me)" & vbCrLf
+    c = c & "End Sub" & vbCrLf
+    c = c & "Private Sub btnFind_Click(): Me.CurPage = 1: Call FilterTable(Me): End Sub" & vbCrLf
+    c = c & "Private Sub btnClear_Click(): Me.txtSearch.Value = """": Me.CurPage = 1: Call FilterTable(Me): End Sub" & vbCrLf
+    c = c & "Private Sub btnRefresh_Click(): Me.CurPage = 1: Call LoadTable(Me): End Sub" & vbCrLf
     c = c & "Private Sub btnExport_Click(): Call ExportCSV(Me): End Sub" & vbCrLf
-    c = c & "Private Sub btnCls_Click():    Call UnhookMouseWheel: Unload Me: End Sub" & vbCrLf
-    c = c & "Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer): Call UnhookMouseWheel: End Sub" & vbCrLf
-    c = c & "Private Sub lstData_MouseMove(ByVal Button As Integer, ByVal Shift As Integer, ByVal X As Single, ByVal Y As Single): Call HookMouseWheelList(Me.Controls(""lstData"")): End Sub" & vbCrLf
+    c = c & "Private Sub btnDelRow_Click(): Call DeleteSelectedRow(Me): End Sub" & vbCrLf
+    c = c & "Private Sub btnPrint_Click(): Call PrintTable(Me): End Sub" & vbCrLf
+    c = c & "Private Sub btnPrev_Click(): If Me.CurPage > 1 Then Me.CurPage = Me.CurPage - 1: Call RenderPage(Me): End If: End Sub" & vbCrLf
+    c = c & "Private Sub btnNext_Click(): If Me.CurPage < Me.TotalPages Then Me.CurPage = Me.CurPage + 1: Call RenderPage(Me): End If: End Sub" & vbCrLf
+    c = c & "Private Sub btnClose_Click()" & vbCrLf
+    c = c & "  On Error Resume Next: Call UnhookMouseWheel: On Error GoTo 0" & vbCrLf
+    c = c & "  Unload Me" & vbCrLf
+    c = c & "End Sub" & vbCrLf
+    c = c & "Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)" & vbCrLf
+    c = c & "  On Error Resume Next: Call UnhookMouseWheel: On Error GoTo 0" & vbCrLf
+    c = c & "End Sub" & vbCrLf
+    c = c & "Private Sub lstData_MouseMove(ByVal Btn As Integer, ByVal Sh As Integer, ByVal X As Single, ByVal Y As Single)" & vbCrLf
+    c = c & "  On Error Resume Next: Call HookMouseWheelList(Me.fraData.Controls(""lstData"")): On Error GoTo 0" & vbCrLf
+    c = c & "End Sub" & vbCrLf
     f.CodeModule.AddFromString c
 End Sub
 
@@ -1363,30 +1625,115 @@ End Sub
 
 ' -----------------------------------------------------------
 '  MODULE: modCRUD  (Student Save / Search / Update / Delete)
+'  SMART SAVE: If CurrentRow > 0, updates existing record.
+'  New record created ONLY when CurrentRow = 0 (first-time admission).
+'  Duplicate AdmNo validation prevents duplicate records.
 ' -----------------------------------------------------------
 Private Sub CreateModCRUD()
     Dim m As Object: Set m = AddMod("modCRUD")
     Dim c$: c = "Option Explicit" & vbCrLf & "Public CurrentDataRow As Long" & vbCrLf
-    ' --- SaveStudent ---
+    ' --- ValidateAdmForm: comprehensive validation for all fields ---
+    c = c & "Private Function ValidateAdmForm(frm As Object) As Boolean" & vbCrLf
+    c = c & "  ValidateAdmForm = False" & vbCrLf
+    c = c & "  If Trim(frm.Controls(""txtFN"").Value) = """" Then" & vbCrLf
+    c = c & "    MsgBox ""Surname is required!"", vbExclamation, ""Validation Error""" & vbCrLf
+    c = c & "    frm.Controls(""txtFN"").SetFocus: Exit Function" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  If Trim(frm.Controls(""txtLN"").Value) = """" Then" & vbCrLf
+    c = c & "    MsgBox ""Other Names is required!"", vbExclamation, ""Validation Error""" & vbCrLf
+    c = c & "    frm.Controls(""txtLN"").SetFocus: Exit Function" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  If frm.Controls(""cmbGen"").Value = """" Then" & vbCrLf
+    c = c & "    MsgBox ""Please select Gender!"", vbExclamation, ""Validation Error""" & vbCrLf
+    c = c & "    frm.Controls(""cmbGen"").SetFocus: Exit Function" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  If frm.Controls(""cmbCls"").Value = """" Then" & vbCrLf
+    c = c & "    MsgBox ""Please select a Class!"", vbExclamation, ""Validation Error""" & vbCrLf
+    c = c & "    frm.Controls(""cmbCls"").SetFocus: Exit Function" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  If Trim(frm.Controls(""txtAdm"").Value) = """" Then" & vbCrLf
+    c = c & "    MsgBox ""Admission Number is required!"", vbExclamation, ""Validation Error""" & vbCrLf
+    c = c & "    frm.Controls(""txtAdm"").SetFocus: Exit Function" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  ValidateAdmForm = True" & vbCrLf
+    c = c & "End Function" & vbCrLf
+    ' --- IsDuplicateAdmNo: check if AdmNo already exists (skip current row) ---
+    c = c & "Private Function IsDuplicateAdmNo(admNo As String, skipRow As Long) As Boolean" & vbCrLf
+    c = c & "  IsDuplicateAdmNo = False" & vbCrLf
+    c = c & "  If Trim(admNo) = """" Then Exit Function" & vbCrLf
+    c = c & "  Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets(S_STUD)" & vbCrLf
+    c = c & "  Dim lr As Long: lr = ws.Cells(ws.Rows.Count, cSID).End(xlUp).Row" & vbCrLf
+    c = c & "  If lr < 2 Then Exit Function" & vbCrLf
+    c = c & "  Dim i As Long" & vbCrLf
+    c = c & "  For i = 2 To lr" & vbCrLf
+    c = c & "    If i <> skipRow Then" & vbCrLf
+    c = c & "      If UCase(Trim(CStr(ws.Cells(i, cADM).Value))) = UCase(Trim(admNo)) Then" & vbCrLf
+    c = c & "        IsDuplicateAdmNo = True: Exit Function" & vbCrLf
+    c = c & "      End If" & vbCrLf
+    c = c & "    End If" & vbCrLf
+    c = c & "  Next i" & vbCrLf
+    c = c & "End Function" & vbCrLf
+    ' --- WriteStudentData: shared helper to write all fields to a row ---
+    c = c & "Private Sub WriteStudentData(frm As Object, ws As Worksheet, r As Long, isNew As Boolean)" & vbCrLf
+    c = c & "  If isNew Then" & vbCrLf
+    c = c & "    ws.Cells(r, cSID) = frm.Controls(""txtSID"").Value" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  ws.Cells(r, cADM) = Trim(frm.Controls(""txtAdm"").Value)" & vbCrLf
+    c = c & "  ws.Cells(r, cFN) = Trim(frm.Controls(""txtFN"").Value)" & vbCrLf
+    c = c & "  ws.Cells(r, cLN) = Trim(frm.Controls(""txtLN"").Value)" & vbCrLf
+    c = c & "  ws.Cells(r, cGEN) = frm.Controls(""cmbGen"").Value" & vbCrLf
+    c = c & "  ws.Cells(r, cDOB) = frm.Controls(""txtDOB"").Value" & vbCrLf
+    c = c & "  ws.Cells(r, cCLS) = frm.Controls(""cmbCls"").Value" & vbCrLf
+    c = c & "  ws.Cells(r, cSTRM) = frm.Controls(""cmbStream"").Value" & vbCrLf
+    c = c & "  ws.Cells(r, cPN) = Trim(frm.Controls(""txtGN"").Value)" & vbCrLf
+    c = c & "  ws.Cells(r, cPH) = frm.Controls(""txtGP"").Value" & vbCrLf
+    c = c & "  ws.Cells(r, cUPI) = frm.Controls(""txtUPI"").Value" & vbCrLf
+    c = c & "  ws.Cells(r, cBC) = frm.Controls(""txtBC"").Value" & vbCrLf
+    c = c & "  ws.Cells(r, cST) = frm.Controls(""cmbSts"").Value" & vbCrLf
+    c = c & "  ws.Cells(r, cALG) = frm.Controls(""txtAlg"").Value" & vbCrLf
+    c = c & "  ws.Cells(r, cSN) = frm.Controls(""txtSN"").Value" & vbCrLf
+    c = c & "  ws.Cells(r, cBG) = frm.Controls(""cmbBG"").Value" & vbCrLf
+    c = c & "  Call SavePhoto(frm): ws.Cells(r, cPHO).Value = GetPhotoPath()" & vbCrLf
+    c = c & "End Sub" & vbCrLf
+    ' --- SaveStudent (SMART: updates existing if loaded from search, creates new only for first-time admission) ---
     c = c & "Public Sub SaveStudent(frm As Object)" & vbCrLf
-    c = c & "  If Trim(frm.Controls(""txtFN"").Value) = """" Then MsgBox ""Surname required!"", vbExclamation: Exit Sub" & vbCrLf
-    c = c & "  If frm.Controls(""cmbCls"").Value = """" Then MsgBox ""Select a Class!"", vbExclamation: Exit Sub" & vbCrLf
+    c = c & "  ' === Validate all required fields ===" & vbCrLf
+    c = c & "  If Not ValidateAdmForm(frm) Then Exit Sub" & vbCrLf
     c = c & "  Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets(S_STUD)" & vbCrLf
     c = c & "  On Error Resume Next: ws.Unprotect ""MIS2026"": On Error GoTo 0" & vbCrLf
-    c = c & "  Dim r As Long: r = ws.Cells(ws.Rows.Count, cSID).End(xlUp).Row + 1" & vbCrLf
-    c = c & "  ws.Cells(r,cSID)=frm.Controls(""txtSID"").Value: ws.Cells(r,cADM)=frm.Controls(""txtAdm"").Value" & vbCrLf
-    c = c & "  ws.Cells(r,cFN)=Trim(frm.Controls(""txtFN"").Value): ws.Cells(r,cLN)=Trim(frm.Controls(""txtLN"").Value)" & vbCrLf
-    c = c & "  ws.Cells(r,cGEN)=frm.Controls(""cmbGen"").Value: ws.Cells(r,cDOB)=frm.Controls(""txtDOB"").Value" & vbCrLf
-    c = c & "  ws.Cells(r,cCLS)=frm.Controls(""cmbCls"").Value: ws.Cells(r,cSTRM)=frm.Controls(""cmbStream"").Value: ws.Cells(r,cPN)=Trim(frm.Controls(""txtGN"").Value)" & vbCrLf
-    c = c & "  ws.Cells(r,cPH)=frm.Controls(""txtGP"").Value: ws.Cells(r,cUPI)=frm.Controls(""txtUPI"").Value" & vbCrLf
-    c = c & "  ws.Cells(r,cBC)=frm.Controls(""txtBC"").Value: ws.Cells(r,cST)=frm.Controls(""cmbSts"").Value" & vbCrLf
-    c = c & "  ws.Cells(r,cALG)=frm.Controls(""txtAlg"").Value: ws.Cells(r,cSN)=frm.Controls(""txtSN"").Value" & vbCrLf
-    c = c & "  ws.Cells(r,cBG)=frm.Controls(""cmbBG"").Value" & vbCrLf
-    c = c & "  Call SavePhoto(frm): ws.Cells(r, cPHO).Value = GetPhotoPath()" & vbCrLf
+    c = c & "  Dim admVal As String: admVal = Trim(frm.Controls(""txtAdm"").Value)" & vbCrLf
+    c = c & "  ' === CASE 1: Editing an existing record (loaded from search) ===" & vbCrLf
+    c = c & "  If frm.CurrentRow > 0 Then" & vbCrLf
+    c = c & "    ' Check for duplicate AdmNo (skip the current row being edited)" & vbCrLf
+    c = c & "    If IsDuplicateAdmNo(admVal, frm.CurrentRow) Then" & vbCrLf
+    c = c & "      MsgBox ""Admission Number '"" & admVal & ""' is already assigned to another student!"" & vbLf & vbLf & ""Cannot save duplicate Admission Number."", vbCritical, ""Duplicate Admission Number""" & vbCrLf
+    c = c & "      ws.Protect ""MIS2026"", UserInterfaceOnly:=True" & vbCrLf
+    c = c & "      frm.Controls(""txtAdm"").SetFocus: Exit Sub" & vbCrLf
+    c = c & "    End If" & vbCrLf
+    c = c & "    Dim rUpd As Long: rUpd = frm.CurrentRow" & vbCrLf
+    c = c & "    Call WriteStudentData(frm, ws, rUpd, False)" & vbCrLf
+    c = c & "    ws.Protect ""MIS2026"", UserInterfaceOnly:=True" & vbCrLf
+    c = c & "    Call AuditLog(""Update"", ""Saved/Updated student: "" & frm.Controls(""txtFN"").Value & "" "" & frm.Controls(""txtLN"").Value & "" (ADM: "" & admVal & "")"")" & vbCrLf
+    c = c & "    MsgBox ""Student record updated successfully (Row "" & rUpd & "")!"", vbInformation, ""Record Saved""" & vbCrLf
+    c = c & "    Call AutoSaveWorkbook" & vbCrLf
+    c = c & "    Call RefreshDashboardKPIs" & vbCrLf
+    c = c & "    frm.Controls(""lblSt"").Caption = "" "" & ChrW(10003) & "" Saved: "" & frm.Controls(""txtFN"").Value & "" "" & frm.Controls(""txtLN"").Value & "" (Row "" & rUpd & "")""" & vbCrLf
+    c = c & "    Exit Sub" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  ' === CASE 2: New first-time admission (CurrentRow = 0) ===" & vbCrLf
+    c = c & "  ' Check for duplicate AdmNo (no row to skip)" & vbCrLf
+    c = c & "  If IsDuplicateAdmNo(admVal, 0) Then" & vbCrLf
+    c = c & "    MsgBox ""Admission Number '"" & admVal & ""' already exists in the database!"" & vbLf & vbLf & ""Each student must have a unique Admission Number."" & vbLf & ""Use FIND to search for the existing student if you need to edit their record."", vbCritical, ""Duplicate Admission Number""" & vbCrLf
+    c = c & "    ws.Protect ""MIS2026"", UserInterfaceOnly:=True" & vbCrLf
+    c = c & "    frm.Controls(""txtAdm"").SetFocus: Exit Sub" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  Dim rNew As Long: rNew = ws.Cells(ws.Rows.Count, cSID).End(xlUp).Row + 1" & vbCrLf
+    c = c & "  Call WriteStudentData(frm, ws, rNew, True)" & vbCrLf
     c = c & "  ws.Protect ""MIS2026"", UserInterfaceOnly:=True" & vbCrLf
-    c = c & "  Call AuditLog(""Admission"", ""Added student: "" & frm.Controls(""txtFN"").Value & "" "" & frm.Controls(""txtLN"").Value & "" (ADM: "" & frm.Controls(""txtAdm"").Value & "")"")" & vbCrLf
-    c = c & "  MsgBox ""Student saved (Row "" & r & "")!"", vbInformation" & vbCrLf
+    c = c & "  Call AuditLog(""Admission"", ""Admitted new student: "" & frm.Controls(""txtFN"").Value & "" "" & frm.Controls(""txtLN"").Value & "" (ADM: "" & admVal & "")"")" & vbCrLf
+    c = c & "  MsgBox ""New student admitted successfully (Row "" & rNew & "")!"", vbInformation, ""Student Admitted""" & vbCrLf
     c = c & "  Call AutoSaveWorkbook" & vbCrLf
+    c = c & "  Call RefreshDashboardKPIs" & vbCrLf
     c = c & "  Call ResetAdmForm(frm)" & vbCrLf
     c = c & "End Sub" & vbCrLf
     ' --- SafeSetCombo: prevents Error 380 ---
@@ -1467,31 +1814,14 @@ Private Sub CreateModCRUD()
     c = c & "  frm.Controls(""txtDt"").Value = CStr(ws.Cells(r, 18).Value)" & vbCrLf
     c = c & "  On Error GoTo 0" & vbCrLf
     c = c & "  Call LoadPhoto(frm, CStr(ws.Cells(r, cPHO).Value))" & vbCrLf
-    c = c & "  frm.Controls(""lblSt"").Caption = "" " & ChrW(10003) & " Found: "" & ws.Cells(r, cFN) & "" "" & ws.Cells(r, cLN) & "" (Row "" & r & "")""" & vbCrLf
+    c = c & "  frm.Controls(""lblSt"").Caption = "" " & ChrW(10003) & " Editing: "" & ws.Cells(r, cFN) & "" "" & ws.Cells(r, cLN) & "" (Row "" & r & "") - Click SAVE to update""" & vbCrLf
     c = c & "  On Error Resume Next: frm.Controls(""txtSearch"").Value = """": On Error GoTo 0" & vbCrLf
     c = c & "End Sub" & vbCrLf
-    ' --- UpdateStudent (with sheet protection handling) ---
+    ' --- UpdateStudent (also uses smart save - updates existing record) ---
     c = c & "Public Sub UpdateStudent(frm As Object)" & vbCrLf
-    c = c & "  If frm.CurrentRow = 0 Then MsgBox ""Search for a student first."", vbExclamation: Exit Sub" & vbCrLf
-    c = c & "  If Trim(frm.Controls(""txtFN"").Value) = """" Then MsgBox ""Surname required!"", vbExclamation: Exit Sub" & vbCrLf
-    c = c & "  If MsgBox(""Update this student's record?"", vbYesNo + vbQuestion, ""Confirm Update"") = vbNo Then Exit Sub" & vbCrLf
-    c = c & "  Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets(S_STUD)" & vbCrLf
-    c = c & "  On Error Resume Next: ws.Unprotect ""MIS2026"": On Error GoTo 0" & vbCrLf
-    c = c & "  Dim r As Long: r = frm.CurrentRow" & vbCrLf
-    c = c & "  ws.Cells(r,cFN)=frm.Controls(""txtFN"").Value: ws.Cells(r,cLN)=frm.Controls(""txtLN"").Value" & vbCrLf
-    c = c & "  ws.Cells(r,cGEN)=frm.Controls(""cmbGen"").Value: ws.Cells(r,cDOB)=frm.Controls(""txtDOB"").Value" & vbCrLf
-    c = c & "  ws.Cells(r,cCLS)=frm.Controls(""cmbCls"").Value: ws.Cells(r,cSTRM)=frm.Controls(""cmbStream"").Value" & vbCrLf
-    c = c & "  ws.Cells(r,cPN)=frm.Controls(""txtGN"").Value" & vbCrLf
-    c = c & "  ws.Cells(r,cPH)=frm.Controls(""txtGP"").Value: ws.Cells(r,cUPI)=frm.Controls(""txtUPI"").Value" & vbCrLf
-    c = c & "  ws.Cells(r,cBC)=frm.Controls(""txtBC"").Value: ws.Cells(r,cST)=frm.Controls(""cmbSts"").Value" & vbCrLf
-    c = c & "  ws.Cells(r,cALG)=frm.Controls(""txtAlg"").Value: ws.Cells(r,cSN)=frm.Controls(""txtSN"").Value" & vbCrLf
-    c = c & "  ws.Cells(r,cBG)=frm.Controls(""cmbBG"").Value" & vbCrLf
-    c = c & "  Call SavePhoto(frm): ws.Cells(r, cPHO).Value = GetPhotoPath()" & vbCrLf
-    c = c & "  ws.Protect ""MIS2026"", UserInterfaceOnly:=True" & vbCrLf
-    c = c & "  Call AuditLog(""Update"", ""Updated student: "" & frm.Controls(""txtFN"").Value & "" "" & frm.Controls(""txtLN"").Value & "" (ADM: "" & frm.Controls(""txtAdm"").Value & "")"")" & vbCrLf
-    c = c & "  MsgBox ""Student record updated successfully!"", vbInformation, ""Updated""" & vbCrLf
-    c = c & "  Call AutoSaveWorkbook" & vbCrLf
-    c = c & "  frm.Controls(""lblSt"").Caption = ""Updated: "" & frm.Controls(""txtFN"").Value & "" "" & frm.Controls(""txtLN"").Value" & vbCrLf
+    c = c & "  If frm.CurrentRow = 0 Then MsgBox ""Search for a student first before updating."" & vbLf & vbLf & ""Use the FIND button to search, then edit and click UPDATE or SAVE."", vbExclamation, ""No Student Loaded"": Exit Sub" & vbCrLf
+    c = c & "  ' Delegate to SaveStudent which handles both new and existing records" & vbCrLf
+    c = c & "  Call SaveStudent(frm)" & vbCrLf
     c = c & "End Sub" & vbCrLf
     ' --- DeleteStudent (with sheet protection handling) ---
     c = c & "Public Sub DeleteStudent(frm As Object)" & vbCrLf
@@ -1505,13 +1835,17 @@ Private Sub CreateModCRUD()
     c = c & "  Call AuditLog(""Delete"", ""Deleted student: "" & nm)" & vbCrLf
     c = c & "  MsgBox ""Student '"" & nm & ""' deleted."", vbInformation, ""Deleted""" & vbCrLf
     c = c & "  Call AutoSaveWorkbook" & vbCrLf
+    c = c & "  Call RefreshDashboardKPIs" & vbCrLf
     c = c & "  Call ResetAdmForm(frm)" & vbCrLf
     c = c & "End Sub" & vbCrLf
     ' --- ResetAdmForm ---
     c = c & "Public Sub ResetAdmForm(frm As Object)" & vbCrLf
     c = c & "  Dim ctl As Object" & vbCrLf
     c = c & "  For Each ctl In frm.Controls" & vbCrLf
-    c = c & "    Select Case TypeName(ctl): Case ""TextBox"": ctl.Value = """": Case ""ComboBox"": ctl.Value = """": End Select" & vbCrLf
+    c = c & "    Select Case TypeName(ctl)" & vbCrLf
+    c = c & "      Case ""TextBox"": ctl.Value = """" " & vbCrLf
+    c = c & "      Case ""ComboBox"": ctl.Value = """" " & vbCrLf
+    c = c & "    End Select" & vbCrLf
     c = c & "  Next ctl" & vbCrLf
     c = c & "  frm.Controls(""txtSID"").Value = NextStudentID()" & vbCrLf
     c = c & "  frm.Controls(""txtDt"").Value = Format(Date, ""dd/mm/yyyy"")" & vbCrLf
@@ -1523,13 +1857,66 @@ Private Sub CreateModCRUD()
 End Sub
 
 ' -----------------------------------------------------------
-'  MODULE: modFees
+'  MODULE: modFees  (Smart Balance Tracking per Fee Category)
+'  Amount Due = Fee Structure Amount - SUM(all prior payments for that fee type)
 ' -----------------------------------------------------------
 Private Sub CreateModFees()
     Dim m As Object: Set m = AddMod("modFees")
     Dim c$: c = "Option Explicit" & vbCrLf
     c = c & "Public gLastReceiptNo As String" & vbCrLf
     c = c & "Public gLastPayRow As Long" & vbCrLf
+    c = c & "Private gFeeStudentID As String  ' StudentID of the loaded student" & vbCrLf
+    ' --- Helper: GetStudentClassAndID - returns class and sets studentID ---
+    c = c & "Private Function GetStudentClassAndID(admNo As String, ByRef outSID As String) As String" & vbCrLf
+    c = c & "  GetStudentClassAndID = """": outSID = """"" & vbCrLf
+    c = c & "  If Trim(admNo) = """" Then Exit Function" & vbCrLf
+    c = c & "  Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets(S_STUD)" & vbCrLf
+    c = c & "  Dim i As Long" & vbCrLf
+    c = c & "  For i = 2 To ws.Cells(ws.Rows.Count, cADM).End(xlUp).Row" & vbCrLf
+    c = c & "    If CStr(ws.Cells(i, cADM).Value) = admNo Then" & vbCrLf
+    c = c & "      GetStudentClassAndID = UCase(Trim(CStr(ws.Cells(i, cCLS).Value)))" & vbCrLf
+    c = c & "      outSID = CStr(ws.Cells(i, cSID).Value)" & vbCrLf
+    c = c & "      Exit Function" & vbCrLf
+    c = c & "    End If" & vbCrLf
+    c = c & "  Next i" & vbCrLf
+    c = c & "End Function" & vbCrLf
+    ' --- Helper: GetFeeStructureAmount - gets full fee for type+class ---
+    c = c & "Private Function GetFeeStructureAmount(feeType As String, stuClass As String) As Double" & vbCrLf
+    c = c & "  GetFeeStructureAmount = 0" & vbCrLf
+    c = c & "  Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets(S_FEE_STR)" & vbCrLf
+    c = c & "  Dim lr As Long: lr = ws.Cells(ws.Rows.Count, 2).End(xlUp).Row" & vbCrLf
+    c = c & "  Dim i As Long" & vbCrLf
+    c = c & "  ' First pass: class-specific match" & vbCrLf
+    c = c & "  If stuClass <> """" Then" & vbCrLf
+    c = c & "    For i = 2 To lr" & vbCrLf
+    c = c & "      If CStr(ws.Cells(i, 2).Value) = feeType And UCase(Trim(CStr(ws.Cells(i, 4).Value))) = stuClass Then" & vbCrLf
+    c = c & "        GetFeeStructureAmount = CDbl(ws.Cells(i, 3).Value): Exit Function" & vbCrLf
+    c = c & "      End If" & vbCrLf
+    c = c & "    Next i" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  ' Second pass: any match on fee type" & vbCrLf
+    c = c & "  For i = 2 To lr" & vbCrLf
+    c = c & "    If CStr(ws.Cells(i, 2).Value) = feeType Then" & vbCrLf
+    c = c & "      GetFeeStructureAmount = CDbl(ws.Cells(i, 3).Value): Exit Function" & vbCrLf
+    c = c & "    End If" & vbCrLf
+    c = c & "  Next i" & vbCrLf
+    c = c & "End Function" & vbCrLf
+    ' --- Helper: GetTotalPaid - sums all payments by student for a fee type ---
+    c = c & "Private Function GetTotalPaid(studentID As String, feeType As String) As Double" & vbCrLf
+    c = c & "  GetTotalPaid = 0" & vbCrLf
+    c = c & "  If studentID = """" Then Exit Function" & vbCrLf
+    c = c & "  Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets(S_FEE_PAY)" & vbCrLf
+    c = c & "  Dim lr As Long: lr = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row" & vbCrLf
+    c = c & "  If lr < 2 Then Exit Function" & vbCrLf
+    c = c & "  Dim i As Long, totalPd As Double: totalPd = 0" & vbCrLf
+    c = c & "  For i = 2 To lr" & vbCrLf
+    c = c & "    If CStr(ws.Cells(i, 2).Value) = studentID And CStr(ws.Cells(i, 3).Value) = feeType Then" & vbCrLf
+    c = c & "      If IsNumeric(ws.Cells(i, 4).Value) Then totalPd = totalPd + CDbl(ws.Cells(i, 4).Value)" & vbCrLf
+    c = c & "    End If" & vbCrLf
+    c = c & "  Next i" & vbCrLf
+    c = c & "  GetTotalPaid = totalPd" & vbCrLf
+    c = c & "End Function" & vbCrLf
+    ' --- InitFeeForm ---
     c = c & "Public Sub InitFeeForm(frm As Object)" & vbCrLf
     c = c & "  frm.Controls(""txtDt"").Value = Format(Date, ""dd/mm/yyyy"")" & vbCrLf
     c = c & "  frm.Controls(""txtRcp"").Value = ""RCP-"" & Format(Now, ""yymmddhhnn"")" & vbCrLf
@@ -1542,11 +1929,9 @@ Private Sub CreateModFees()
     c = c & "  On Error Resume Next" & vbCrLf
     c = c & "  Dim sAdm As String: sAdm = Trim(frm.Controls(""txtAdm"").Value)" & vbCrLf
     c = c & "  If sAdm <> """" Then" & vbCrLf
-    c = c & "    Dim sWs As Worksheet: Set sWs = ThisWorkbook.Sheets(S_STUD)" & vbCrLf
-    c = c & "    Dim si As Long" & vbCrLf
-    c = c & "    For si = 2 To sWs.Cells(sWs.Rows.Count, cADM).End(xlUp).Row" & vbCrLf
-    c = c & "      If CStr(sWs.Cells(si, cADM).Value) = sAdm Then stuCls = UCase(Trim(CStr(sWs.Cells(si, cCLS).Value))): Exit For" & vbCrLf
-    c = c & "    Next si" & vbCrLf
+    c = c & "    Dim tmpSID As String" & vbCrLf
+    c = c & "    stuCls = GetStudentClassAndID(sAdm, tmpSID)" & vbCrLf
+    c = c & "    gFeeStudentID = tmpSID" & vbCrLf
     c = c & "  End If" & vbCrLf
     c = c & "  On Error GoTo 0" & vbCrLf
     c = c & "  ' Populate fee types filtered by student class; fallback to all" & vbCrLf
@@ -1554,12 +1939,13 @@ Private Sub CreateModFees()
     c = c & "  For i = 2 To ws.Cells(ws.Rows.Count, 2).End(xlUp).Row" & vbCrLf
     c = c & "    Dim fCls As String: fCls = UCase(Trim(CStr(ws.Cells(i, 4).Value)))" & vbCrLf
     c = c & "    Dim fType As String: fType = CStr(ws.Cells(i, 2).Value)" & vbCrLf
-    c = c & "    If (stuCls = """" Or fCls = stuCls) And Not added.Exists(fType) Then" & vbCrLf
+    c = c & "    If (stuCls = """" Or fCls = stuCls Or fCls = """") And Not added.Exists(fType) Then" & vbCrLf
     c = c & "      frm.Controls(""cmbType"").AddItem fType" & vbCrLf
     c = c & "      added(fType) = 1" & vbCrLf
     c = c & "    End If" & vbCrLf
     c = c & "  Next i" & vbCrLf
     c = c & "End Sub" & vbCrLf
+    ' --- FindStudentFee: now stores StudentID for balance lookups ---
     c = c & "Public Sub FindStudentFee(frm As Object)" & vbCrLf
     c = c & "  Dim s As String: s = Trim(frm.Controls(""txtAdm"").Value)" & vbCrLf
     c = c & "  If s = """" Then MsgBox ""Enter Adm No."", vbExclamation: Exit Sub" & vbCrLf
@@ -1568,69 +1954,111 @@ Private Sub CreateModFees()
     c = c & "  For i = 2 To ws.Cells(ws.Rows.Count, cADM).End(xlUp).Row" & vbCrLf
     c = c & "    If CStr(ws.Cells(i, cADM).Value) = s Then" & vbCrLf
     c = c & "      frm.Controls(""txtName"").Value = ws.Cells(i, cFN) & "" "" & ws.Cells(i, cLN)" & vbCrLf
-    c = c & "      frm.Controls(""lblSt"").Caption = "" "" & ChrW(10003) & "" Student found: "" & frm.Controls(""txtName"").Value: Exit Sub" & vbCrLf
-    c = c & "    End If: Next i" & vbCrLf
+    c = c & "      gFeeStudentID = CStr(ws.Cells(i, cSID).Value)" & vbCrLf
+    c = c & "      ' Re-populate fee types filtered by this student's class" & vbCrLf
+    c = c & "      Call InitFeeForm(frm)" & vbCrLf
+    c = c & "      ' Restore the name (InitFeeForm may clear it)" & vbCrLf
+    c = c & "      frm.Controls(""txtName"").Value = ws.Cells(i, cFN) & "" "" & ws.Cells(i, cLN)" & vbCrLf
+    c = c & "      frm.Controls(""txtAdm"").Value = s" & vbCrLf
+    c = c & "      frm.Controls(""lblSt"").Caption = "" "" & ChrW(10003) & "" Student found: "" & frm.Controls(""txtName"").Value" & vbCrLf
+    c = c & "      Exit Sub" & vbCrLf
+    c = c & "    End If" & vbCrLf
+    c = c & "  Next i" & vbCrLf
     c = c & "  MsgBox ""Student not found."", vbExclamation" & vbCrLf
     c = c & "End Sub" & vbCrLf
+    ' --- AutoFillAmt: SMART - calculates actual outstanding balance ---
     c = c & "Public Sub AutoFillAmt(frm As Object)" & vbCrLf
-    c = c & "  Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets(S_FEE_STR)" & vbCrLf
     c = c & "  Dim selType As String: selType = frm.Controls(""cmbType"").Value" & vbCrLf
-    c = c & "  ' Try to get student class for class-specific amount" & vbCrLf
-    c = c & "  Dim stuCls As String: stuCls = """"" & vbCrLf
-    c = c & "  On Error Resume Next" & vbCrLf
+    c = c & "  If selType = """" Then Exit Sub" & vbCrLf
+    c = c & "  ' Get student class and ID" & vbCrLf
+    c = c & "  Dim stuCls As String, stuID As String" & vbCrLf
     c = c & "  Dim sAdm As String: sAdm = Trim(frm.Controls(""txtAdm"").Value)" & vbCrLf
     c = c & "  If sAdm <> """" Then" & vbCrLf
-    c = c & "    Dim sWs As Worksheet: Set sWs = ThisWorkbook.Sheets(S_STUD)" & vbCrLf
-    c = c & "    Dim si As Long" & vbCrLf
-    c = c & "    For si = 2 To sWs.Cells(sWs.Rows.Count, cADM).End(xlUp).Row" & vbCrLf
-    c = c & "      If CStr(sWs.Cells(si, cADM).Value) = sAdm Then stuCls = UCase(Trim(CStr(sWs.Cells(si, cCLS).Value))): Exit For" & vbCrLf
-    c = c & "    Next si" & vbCrLf
+    c = c & "    stuCls = GetStudentClassAndID(sAdm, stuID)" & vbCrLf
+    c = c & "    gFeeStudentID = stuID" & vbCrLf
+    c = c & "  Else" & vbCrLf
+    c = c & "    stuCls = """": stuID = gFeeStudentID" & vbCrLf
     c = c & "  End If" & vbCrLf
-    c = c & "  On Error GoTo 0" & vbCrLf
-    c = c & "  Dim i As Long" & vbCrLf
-    c = c & "  ' First pass: class-specific match" & vbCrLf
-    c = c & "  For i = 2 To ws.Cells(ws.Rows.Count, 2).End(xlUp).Row" & vbCrLf
-    c = c & "    If CStr(ws.Cells(i, 2).Value) = selType And UCase(Trim(CStr(ws.Cells(i, 4).Value))) = stuCls Then" & vbCrLf
-    c = c & "      frm.Controls(""txtDue"").Value = ws.Cells(i, 3).Value: Exit Sub" & vbCrLf
-    c = c & "    End If" & vbCrLf
-    c = c & "  Next i" & vbCrLf
-    c = c & "  ' Second pass: any match on fee type" & vbCrLf
-    c = c & "  For i = 2 To ws.Cells(ws.Rows.Count, 2).End(xlUp).Row" & vbCrLf
-    c = c & "    If CStr(ws.Cells(i, 2).Value) = selType Then" & vbCrLf
-    c = c & "      frm.Controls(""txtDue"").Value = ws.Cells(i, 3).Value: Exit Sub" & vbCrLf
-    c = c & "    End If" & vbCrLf
-    c = c & "  Next i" & vbCrLf
+    c = c & "  ' Step 1: Get the full fee amount from fee structure" & vbCrLf
+    c = c & "  Dim fullFee As Double: fullFee = GetFeeStructureAmount(selType, stuCls)" & vbCrLf
+    c = c & "  ' Step 2: Sum all previous payments by this student for this fee type" & vbCrLf
+    c = c & "  Dim totalPaid As Double: totalPaid = GetTotalPaid(stuID, selType)" & vbCrLf
+    c = c & "  ' Step 3: Calculate outstanding balance" & vbCrLf
+    c = c & "  Dim outstanding As Double: outstanding = fullFee - totalPaid" & vbCrLf
+    c = c & "  If outstanding < 0 Then outstanding = 0" & vbCrLf
+    c = c & "  ' Display the outstanding balance as Amount Due" & vbCrLf
+    c = c & "  frm.Controls(""txtDue"").Value = Format(outstanding, ""#,##0"")" & vbCrLf
+    c = c & "  frm.Controls(""txtPaid"").Value = """"" & vbCrLf
+    c = c & "  frm.Controls(""txtBal"").Value = """"" & vbCrLf
+    c = c & "  ' Show payment history summary in status bar" & vbCrLf
+    c = c & "  If totalPaid > 0 Then" & vbCrLf
+    c = c & "    frm.Controls(""lblSt"").Caption = "" "" & selType & "": Full Fee = "" & Format(fullFee, ""#,##0"") & "" | Paid = "" & Format(totalPaid, ""#,##0"") & "" | Balance = "" & Format(outstanding, ""#,##0"")" & vbCrLf
+    c = c & "  Else" & vbCrLf
+    c = c & "    frm.Controls(""lblSt"").Caption = "" "" & selType & "": Fee = "" & Format(fullFee, ""#,##0"") & "" (No prior payments)""" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  ' If fully paid, notify and disable payment" & vbCrLf
+    c = c & "  If outstanding = 0 And fullFee > 0 Then" & vbCrLf
+    c = c & "    frm.Controls(""lblSt"").Caption = "" "" & ChrW(10003) & "" "" & selType & "" is FULLY PAID! (Total: "" & Format(fullFee, ""#,##0"") & "")""" & vbCrLf
+    c = c & "    MsgBox selType & "" is fully paid for this student."" & vbLf & vbLf & ""Full Fee: KSh "" & Format(fullFee, ""#,##0"") & vbLf & ""Total Paid: KSh "" & Format(totalPaid, ""#,##0""), vbInformation, ""Fully Paid""" & vbCrLf
+    c = c & "  End If" & vbCrLf
     c = c & "End Sub" & vbCrLf
-    ' --- CollectFee (enhanced: saves + offers receipt print) ---
+    ' --- CollectFee (enhanced: validates against outstanding, saves + offers receipt print) ---
     c = c & "Public Sub CollectFee(frm As Object)" & vbCrLf
     c = c & "  If frm.Controls(""txtName"").Value = """" Then MsgBox ""Find student first."", vbExclamation: Exit Sub" & vbCrLf
     c = c & "  If Not IsNumeric(frm.Controls(""txtPaid"").Value) Then MsgBox ""Enter amount paid."", vbExclamation: Exit Sub" & vbCrLf
+    c = c & "  If CDbl(frm.Controls(""txtPaid"").Value) <= 0 Then MsgBox ""Amount must be greater than zero."", vbExclamation: Exit Sub" & vbCrLf
     c = c & "  If frm.Controls(""cmbMode"").Value = """" Then MsgBox ""Select payment mode."", vbExclamation: Exit Sub" & vbCrLf
     c = c & "  If frm.Controls(""cmbType"").Value = """" Then MsgBox ""Select fee type."", vbExclamation: Exit Sub" & vbCrLf
+    c = c & "  ' Validate: prevent overpayment" & vbCrLf
+    c = c & "  Dim paidNow As Double: paidNow = CDbl(frm.Controls(""txtPaid"").Value)" & vbCrLf
+    c = c & "  Dim dueVal As Double: dueVal = 0" & vbCrLf
+    c = c & "  If IsNumeric(Replace(frm.Controls(""txtDue"").Value, "","", """")) Then dueVal = CDbl(Replace(frm.Controls(""txtDue"").Value, "","", """"))" & vbCrLf
+    c = c & "  If dueVal = 0 Then" & vbCrLf
+    c = c & "    MsgBox ""This fee category is already fully paid!"" & vbLf & ""No payment is required."", vbExclamation, ""Already Paid""" & vbCrLf
+    c = c & "    Exit Sub" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  If paidNow > dueVal Then" & vbCrLf
+    c = c & "    If MsgBox(""Amount paid (KSh "" & Format(paidNow, ""#,##0"") & "") exceeds balance due (KSh "" & Format(dueVal, ""#,##0"") & "")."" & vbLf & vbLf & ""Do you want to continue? The overpayment will be recorded."", vbYesNo + vbExclamation, ""Overpayment Warning"") = vbNo Then Exit Sub" & vbCrLf
+    c = c & "  End If" & vbCrLf
     c = c & "  Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets(S_FEE_PAY)" & vbCrLf
     c = c & "  On Error Resume Next: ws.Unprotect ""MIS2026"": On Error GoTo 0" & vbCrLf
     c = c & "  Dim r As Long: r = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row + 1" & vbCrLf
     c = c & "  ws.Cells(r, 1) = ""PAY-"" & Format(r - 1, ""00000"")" & vbCrLf
-    c = c & "  ' --- Look up StudentID from DB_Students ---" & vbCrLf
-    c = c & "  Dim sID As String: sID = """"" & vbCrLf
-    c = c & "  Dim sW As Worksheet: Set sW = ThisWorkbook.Sheets(S_STUD): Dim j As Long" & vbCrLf
-    c = c & "  For j = 2 To sW.Cells(sW.Rows.Count, cADM).End(xlUp).Row" & vbCrLf
-    c = c & "    If CStr(sW.Cells(j, cADM).Value) = frm.Controls(""txtAdm"").Value Then sID = CStr(sW.Cells(j, cSID).Value): Exit For" & vbCrLf
-    c = c & "  Next j" & vbCrLf
+    c = c & "  ' --- Use stored StudentID or look it up ---" & vbCrLf
+    c = c & "  Dim sID As String: sID = gFeeStudentID" & vbCrLf
+    c = c & "  If sID = """" Then" & vbCrLf
+    c = c & "    Dim sW As Worksheet: Set sW = ThisWorkbook.Sheets(S_STUD): Dim j As Long" & vbCrLf
+    c = c & "    For j = 2 To sW.Cells(sW.Rows.Count, cADM).End(xlUp).Row" & vbCrLf
+    c = c & "      If CStr(sW.Cells(j, cADM).Value) = frm.Controls(""txtAdm"").Value Then sID = CStr(sW.Cells(j, cSID).Value): Exit For" & vbCrLf
+    c = c & "    Next j" & vbCrLf
+    c = c & "  End If" & vbCrLf
     c = c & "  ws.Cells(r, 2) = sID" & vbCrLf
     c = c & "  ws.Cells(r, 3) = frm.Controls(""cmbType"").Value" & vbCrLf
-    c = c & "  ws.Cells(r, 4) = CDbl(frm.Controls(""txtPaid"").Value)" & vbCrLf
+    c = c & "  ws.Cells(r, 4) = paidNow" & vbCrLf
     c = c & "  ws.Cells(r, 5) = frm.Controls(""cmbMode"").Value" & vbCrLf
     c = c & "  ws.Cells(r, 6) = frm.Controls(""txtRcp"").Value" & vbCrLf
     c = c & "  ws.Cells(r, 7) = frm.Controls(""txtDt"").Value" & vbCrLf
     c = c & "  ws.Protect ""MIS2026"", UserInterfaceOnly:=True" & vbCrLf
     c = c & "  gLastReceiptNo = frm.Controls(""txtRcp"").Value" & vbCrLf
     c = c & "  gLastPayRow = r" & vbCrLf
-    c = c & "  Call AuditLog(""Fee Collection"", ""Collected "" & frm.Controls(""txtPaid"").Value & "" for student "" & frm.Controls(""txtAdm"").Value & "" Receipt: "" & gLastReceiptNo)" & vbCrLf
+    c = c & "  Call AuditLog(""Fee Collection"", ""Collected "" & Format(paidNow, ""#,##0"") & "" for student "" & frm.Controls(""txtAdm"").Value & "" ("" & frm.Controls(""cmbType"").Value & "") Receipt: "" & gLastReceiptNo)" & vbCrLf
     c = c & "  Call AutoSaveWorkbook" & vbCrLf
-    c = c & "  frm.Controls(""lblSt"").Caption = "" "" & ChrW(10003) & "" Fee Collected! Receipt: "" & gLastReceiptNo" & vbCrLf
+    c = c & "  Call RefreshDashboardKPIs" & vbCrLf
+    c = c & "  ' --- Auto-refresh Fee Arrears report if currently displayed ---" & vbCrLf
+    c = c & "  On Error Resume Next" & vbCrLf
+    c = c & "  Dim rptWs As Worksheet: Set rptWs = ThisWorkbook.Sheets(""REPORT OUTPUT"")" & vbCrLf
+    c = c & "  If Not rptWs Is Nothing Then" & vbCrLf
+    c = c & "    If InStr(1, CStr(rptWs.Cells(1, 1).Value), ""FEE ARREARS"", vbTextCompare) > 0 Then" & vbCrLf
+    c = c & "      Call RptFeeArrears" & vbCrLf
+    c = c & "    End If" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  On Error GoTo 0" & vbCrLf
+    c = c & "  ' Calculate new balance after this payment" & vbCrLf
+    c = c & "  Dim newBal As Double: newBal = dueVal - paidNow" & vbCrLf
+    c = c & "  If newBal < 0 Then newBal = 0" & vbCrLf
+    c = c & "  frm.Controls(""lblSt"").Caption = "" "" & ChrW(10003) & "" Fee Collected! Receipt: "" & gLastReceiptNo & "" | Remaining: KSh "" & Format(newBal, ""#,##0"")" & vbCrLf
     c = c & "  Dim ans As VbMsgBoxResult" & vbCrLf
-    c = c & "  ans = MsgBox(""Fee Collected Successfully!"" & vbLf & vbLf & ""Receipt No: "" & gLastReceiptNo & vbLf & vbLf & ""Print receipt now?"", vbYesNo + vbInformation, ""Fee Collected"")" & vbCrLf
+    c = c & "  ans = MsgBox(""Fee Collected Successfully!"" & vbLf & vbLf & ""Receipt No: "" & gLastReceiptNo & vbLf & ""Amount Paid: KSh "" & Format(paidNow, ""#,##0"") & vbLf & ""Remaining Balance: KSh "" & Format(newBal, ""#,##0"") & vbLf & vbLf & ""Print receipt now?"", vbYesNo + vbInformation, ""Fee Collected"")" & vbCrLf
     c = c & "  If ans = vbYes Then" & vbCrLf
     c = c & "    Dim payR As Long: payR = r" & vbCrLf
     c = c & "    frm.Hide" & vbCrLf
@@ -1680,6 +2108,7 @@ Private Sub CreateModFees()
     c = c & "  frm.Controls(""cmbMode"") = """": frm.Controls(""txtDt"").Value = Format(Date, ""dd/mm/yyyy"")" & vbCrLf
     c = c & "  frm.Controls(""txtRcp"").Value = ""RCP-"" & Format(Now, ""yymmddhhnn"")" & vbCrLf
     c = c & "  frm.Controls(""lblSt"").Caption = "" Ready.""" & vbCrLf
+    c = c & "  gFeeStudentID = """"" & vbCrLf
     c = c & "End Sub" & vbCrLf
     m.CodeModule.AddFromString c
 End Sub
@@ -1739,6 +2168,7 @@ Private Sub CreateModAttendance()
     c = c & "  Call AuditLog(""Attendance"", ""Saved "" & cnt & "" attendance records for class "" & frm.Controls(""cmbCls"").Value & "" on "" & frm.Controls(""txtDt"").Value)" & vbCrLf
     c = c & "  MsgBox cnt & "" attendance records saved!"", vbInformation" & vbCrLf
     c = c & "  Call AutoSaveWorkbook" & vbCrLf
+    c = c & "  Call RefreshDashboardKPIs" & vbCrLf
     c = c & "  frm.Controls(""lblSt"").Caption = ""Saved "" & cnt & "" records.""" & vbCrLf
     c = c & "End Sub" & vbCrLf
     m.CodeModule.AddFromString c
@@ -1810,9 +2240,16 @@ Private Sub CreateModTeacher()
     c = c & "  If existRow = 0 Then Call ResetTeacherForm(frm)" & vbCrLf
     c = c & "  Call AutoSaveWorkbook" & vbCrLf
     c = c & "End Sub" & vbCrLf
-    ' === FIND ===
+    ' === FIND (uses inline txtSearch, sets CurrentRow) ===
     c = c & "Public Sub FindTeacher(frm As Object)" & vbCrLf
-    c = c & "  Dim s As String: s = InputBox(""Enter Staff/Teacher ID or Name:"", ""Search""): If s = """" Then Exit Sub" & vbCrLf
+    c = c & "  Dim s As String" & vbCrLf
+    c = c & "  On Error Resume Next" & vbCrLf
+    c = c & "  s = Trim(frm.Controls(""txtSearch"").Value)" & vbCrLf
+    c = c & "  On Error GoTo 0" & vbCrLf
+    c = c & "  If s = """" Then" & vbCrLf
+    c = c & "    s = InputBox(""Enter Staff/Teacher ID or Name:"", ""Search"")" & vbCrLf
+    c = c & "    If s = """" Then Exit Sub" & vbCrLf
+    c = c & "  End If" & vbCrLf
     c = c & "  Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets(S_TEACH)" & vbCrLf
     c = c & "  Dim i As Long" & vbCrLf
     c = c & "  For i = 2 To ws.Cells(ws.Rows.Count, 1).End(xlUp).Row" & vbCrLf
@@ -1831,30 +2268,69 @@ Private Sub CreateModTeacher()
     c = c & "        Call ToggleStaffType(frm, True)" & vbCrLf
     c = c & "        frm.Controls(""cmbSub"").Value = CStr(ws.Cells(i, 6).Value)" & vbCrLf
     c = c & "      End If" & vbCrLf
-    c = c & "      frm.Controls(""lblSt"").Caption = ChrW(10003) & "" Found: "" & ws.Cells(i, 2).Value & "" ["" & IIf(sType = """", ""Teacher"", sType) & ""]""" & vbCrLf
+    c = c & "      frm.CurrentRow = i" & vbCrLf
+    c = c & "      frm.Controls(""txtTID"").Enabled = False" & vbCrLf
+    c = c & "      frm.Controls(""lblSt"").Caption = ChrW(10003) & "" Found: "" & ws.Cells(i, 2).Value & "" ["" & IIf(sType = """", ""Teacher"", sType) & ""]  -  Edit fields and click UPDATE.""" & vbCrLf
     c = c & "      frm.Controls(""lblSt"").ForeColor = &H2E7D32: Exit Sub" & vbCrLf
     c = c & "    End If: Next i" & vbCrLf
-    c = c & "  MsgBox ""Not found."", vbExclamation" & vbCrLf
+    c = c & "  frm.Controls(""lblSt"").Caption = ChrW(10005) & "" No staff record found for '"" & s & ""'.""" & vbCrLf
+    c = c & "  frm.Controls(""lblSt"").ForeColor = &HC62828" & vbCrLf
     c = c & "End Sub" & vbCrLf
-    ' === DELETE ===
-    c = c & "Public Sub DeleteTeacher(frm As Object)" & vbCrLf
-    c = c & "  If frm.Controls(""txtTID"").Value = """" Then MsgBox ""Find record first."", vbExclamation: Exit Sub" & vbCrLf
-    c = c & "  If MsgBox(""Delete this record?"", vbYesNo + vbCritical) = vbNo Then Exit Sub" & vbCrLf
+    ' === UPDATE (requires CurrentRow from a previous Find) ===
+    c = c & "Public Sub UpdateTeacher(frm As Object)" & vbCrLf
+    c = c & "  If frm.CurrentRow = 0 Then" & vbCrLf
+    c = c & "    MsgBox ""Please search and find a record first before updating."", vbExclamation, ""Update Staff""" & vbCrLf
+    c = c & "    frm.Controls(""lblSt"").Caption = ChrW(9888) & "" Use Search to find a record first, then click UPDATE.""" & vbCrLf
+    c = c & "    frm.Controls(""lblSt"").ForeColor = &HFB8C00: Exit Sub" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  If Trim(frm.Controls(""txtTN"").Value) = """" Then MsgBox ""Full Name is required!"", vbExclamation: Exit Sub" & vbCrLf
+    c = c & "  Dim isTeacher As Boolean: isTeacher = frm.Controls(""optTeacher"").Value" & vbCrLf
+    c = c & "  Dim sType As String: If isTeacher Then sType = ""Teacher"" Else sType = ""Staff""" & vbCrLf
     c = c & "  Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets(S_TEACH)" & vbCrLf
     c = c & "  On Error Resume Next: ws.Unprotect ""MIS2026"": On Error GoTo 0" & vbCrLf
-    c = c & "  Dim i As Long" & vbCrLf
-    c = c & "  For i = 2 To ws.Cells(ws.Rows.Count, 1).End(xlUp).Row" & vbCrLf
-    c = c & "    If ws.Cells(i, 1).Value = frm.Controls(""txtTID"").Value Then ws.Rows(i).Delete xlUp: Exit For" & vbCrLf
-    c = c & "  Next i" & vbCrLf
+    c = c & "  Dim r As Long: r = frm.CurrentRow" & vbCrLf
+    c = c & "  ws.Cells(r,2)=frm.Controls(""txtTN"").Value" & vbCrLf
+    c = c & "  ws.Cells(r,3)=frm.Controls(""txtTSC"").Value: ws.Cells(r,4)=frm.Controls(""txtTP"").Value" & vbCrLf
+    c = c & "  ws.Cells(r,5)=frm.Controls(""txtTE"").Value" & vbCrLf
+    c = c & "  If isTeacher Then ws.Cells(r,6)=frm.Controls(""cmbSub"").Value Else ws.Cells(r,6)=frm.Controls(""cmbDept"").Value" & vbCrLf
+    c = c & "  ws.Cells(r,7)=frm.Controls(""txtJD"").Value" & vbCrLf
+    c = c & "  ws.Cells(r,8)=sType" & vbCrLf
+    c = c & "  If Not isTeacher Then ws.Cells(r,9)=frm.Controls(""cmbDept"").Value" & vbCrLf
     c = c & "  ws.Protect ""MIS2026"", UserInterfaceOnly:=True" & vbCrLf
-    c = c & "  Call AuditLog(""Staff Management"", ""Deleted: "" & frm.Controls(""txtTN"").Value & "" (ID: "" & frm.Controls(""txtTID"").Value & "")"")" & vbCrLf
-    c = c & "  MsgBox ""Deleted."", vbInformation: Call ResetTeacherForm(frm)" & vbCrLf
+    c = c & "  Call AuditLog(""Staff Management"", ""Updated "" & sType & "": "" & frm.Controls(""txtTN"").Value & "" (ID: "" & frm.Controls(""txtTID"").Value & "")"")" & vbCrLf
+    c = c & "  frm.Controls(""lblSt"").Caption = ChrW(10003) & "" "" & sType & "" '"" & frm.Controls(""txtTN"").Value & ""' updated successfully.""" & vbCrLf
+    c = c & "  frm.Controls(""lblSt"").ForeColor = &H2E7D32" & vbCrLf
     c = c & "  Call AutoSaveWorkbook" & vbCrLf
     c = c & "End Sub" & vbCrLf
-    ' === RESET ===
+    ' === DELETE (requires CurrentRow from a previous Find) ===
+    c = c & "Public Sub DeleteTeacher(frm As Object)" & vbCrLf
+    c = c & "  If frm.CurrentRow = 0 Then" & vbCrLf
+    c = c & "    MsgBox ""Please search and find a record first before deleting."", vbExclamation, ""Delete Staff""" & vbCrLf
+    c = c & "    frm.Controls(""lblSt"").Caption = ChrW(9888) & "" Use Search to find a record first, then click DELETE.""" & vbCrLf
+    c = c & "    frm.Controls(""lblSt"").ForeColor = &HFB8C00: Exit Sub" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  Dim staffName As String: staffName = frm.Controls(""txtTN"").Value" & vbCrLf
+    c = c & "  Dim staffID As String: staffID = frm.Controls(""txtTID"").Value" & vbCrLf
+    c = c & "  If MsgBox(""Are you sure you want to DELETE staff record:"" & vbLf & vbLf & ""Name: "" & staffName & vbLf & ""ID: "" & staffID, vbYesNo + vbCritical, ""Confirm Delete"") = vbNo Then Exit Sub" & vbCrLf
+    c = c & "  Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets(S_TEACH)" & vbCrLf
+    c = c & "  On Error Resume Next: ws.Unprotect ""MIS2026"": On Error GoTo 0" & vbCrLf
+    c = c & "  ws.Rows(frm.CurrentRow).Delete xlUp" & vbCrLf
+    c = c & "  ws.Protect ""MIS2026"", UserInterfaceOnly:=True" & vbCrLf
+    c = c & "  Call AuditLog(""Staff Management"", ""Deleted: "" & staffName & "" (ID: "" & staffID & "")"")" & vbCrLf
+    c = c & "  frm.Controls(""lblSt"").Caption = ChrW(10003) & "" Staff '"" & staffName & ""' deleted successfully.""" & vbCrLf
+    c = c & "  frm.Controls(""lblSt"").ForeColor = &HC62828" & vbCrLf
+    c = c & "  Call ResetTeacherForm(frm)" & vbCrLf
+    c = c & "  Call AutoSaveWorkbook" & vbCrLf
+    c = c & "End Sub" & vbCrLf
+    ' === RESET (clears form, resets CurrentRow, clears search) ===
     c = c & "Public Sub ResetTeacherForm(frm As Object)" & vbCrLf
     c = c & "  frm.Controls(""txtTN"")="""": frm.Controls(""txtTSC"")="""": frm.Controls(""txtTP"")="""": frm.Controls(""txtTE"")="""": frm.Controls(""cmbSub"")="""": frm.Controls(""cmbDept"")=""""" & vbCrLf
-    c = c & "  Call InitTeacherForm(frm): frm.Controls(""lblSt"").Caption = "" Reset.""" & vbCrLf
+    c = c & "  On Error Resume Next: frm.Controls(""txtSearch"").Value = """": On Error GoTo 0" & vbCrLf
+    c = c & "  frm.CurrentRow = 0" & vbCrLf
+    c = c & "  frm.Controls(""txtTID"").Enabled = True" & vbCrLf
+    c = c & "  Call InitTeacherForm(frm)" & vbCrLf
+    c = c & "  frm.Controls(""lblSt"").Caption = "" Ready.  Enter new staff or search for existing.""" & vbCrLf
+    c = c & "  frm.Controls(""lblSt"").ForeColor = &H666666" & vbCrLf
     c = c & "End Sub" & vbCrLf
     ' === CREATE USER FROM STAFF FORM (opens user mgmt with pre-filled data) ===
     c = c & "Public Sub CreateUserFromStaffForm(frm As Object)" & vbCrLf
@@ -1925,7 +2401,7 @@ Private Sub CreateModReports()
     c = c & "RptErr:" & vbCrLf
     c = c & "  Application.StatusBar = ""Error: "" & Err.Description" & vbCrLf
     c = c & "End Sub" & vbCrLf
-    c = c & "Public Sub GenerateClassListReport(cls As String)" & vbCrLf
+    c = c & "Public Sub GenerateClassListReport(cls As String, Optional savePath As String = """", Optional saveFormat As String = """")" & vbCrLf
     c = c & "  On Error GoTo RptErr" & vbCrLf
     c = c & "  If cls = """" Then Exit Sub" & vbCrLf
     c = c & "  Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets(S_STUD)" & vbCrLf
@@ -1949,11 +2425,35 @@ Private Sub CreateModReports()
     c = c & "    End If" & vbCrLf
     c = c & "  Next i" & vbCrLf
     c = c & "  Call FormatHeader(rpt, 7)" & vbCrLf
+    c = c & "  ' --- Save to file if requested ---" & vbCrLf
+    c = c & "  If savePath <> """" Then" & vbCrLf
+    c = c & "    On Error Resume Next" & vbCrLf
+    c = c & "    Dim saveOK As Boolean: saveOK = False" & vbCrLf
+    c = c & "    If saveFormat = ""PDF"" Then" & vbCrLf
+    c = c & "      rpt.PageSetup.Orientation = xlLandscape" & vbCrLf
+    c = c & "      rpt.PageSetup.FitToPagesWide = 1" & vbCrLf
+    c = c & "      rpt.PageSetup.FitToPagesTall = False" & vbCrLf
+    c = c & "      rpt.ExportAsFixedFormat xlTypePDF, savePath, xlQualityStandard, , , , , False" & vbCrLf
+    c = c & "      saveOK = (Err.Number = 0)" & vbCrLf
+    c = c & "    Else" & vbCrLf
+    c = c & "      rpt.Copy" & vbCrLf
+    c = c & "      ActiveWorkbook.SaveAs savePath, xlOpenXMLWorkbook" & vbCrLf
+    c = c & "      saveOK = (Err.Number = 0)" & vbCrLf
+    c = c & "      ActiveWorkbook.Close False" & vbCrLf
+    c = c & "    End If" & vbCrLf
+    c = c & "    On Error GoTo RptErr" & vbCrLf
+    c = c & "    If saveOK Then" & vbCrLf
+    c = c & "      Shell ""explorer.exe """""" & savePath & """""", vbNormalFocus" & vbCrLf
+    c = c & "      MsgBox ""Report saved successfully!"" & vbLf & vbLf & savePath, vbInformation, ""Report Saved""" & vbCrLf
+    c = c & "    Else" & vbCrLf
+    c = c & "      MsgBox ""Could not save file. The report is still available on the report sheet."", vbExclamation, ""Save Warning""" & vbCrLf
+    c = c & "    End If" & vbCrLf
+    c = c & "  End If" & vbCrLf
     c = c & "  rpt.Activate" & vbCrLf
     c = c & "  Call AddBackToDashboardButton(rpt)" & vbCrLf
     c = c & "  Call SetupReportNavigation" & vbCrLf
     c = c & "  Application.StatusBar = ChrW(10003) & "" Class List Report: "" & cnt & "" students in "" & cls & "".""" & vbCrLf
-    c = c & "  Call AuditLog(""Report"", ""Generated Class List Report for class: "" & cls)" & vbCrLf
+    c = c & "  Call AuditLog(""Report"", ""Generated Class List Report for class: "" & cls & IIf(savePath <> """", "" | Saved to: "" & savePath, """"))" & vbCrLf
     c = c & "  Exit Sub" & vbCrLf
     c = c & "RptErr:" & vbCrLf
     c = c & "  Application.StatusBar = ""Error generating Class List: "" & Err.Description" & vbCrLf
@@ -2097,55 +2597,6 @@ Private Sub CreateModReports()
     m.CodeModule.AddFromString c
 End Sub
 
-' -----------------------------------------------------------
-'  MODULE: modDatabase (browser + CSV export)
-' -----------------------------------------------------------
-Private Sub CreateModDatabase()
-    Dim m As Object: Set m = AddMod("modDatabase")
-    Dim c$: c = "Option Explicit" & vbCrLf
-    c = c & "Public Sub InitDbForm(frm As Object)" & vbCrLf
-    c = c & "  With frm.Controls(""cmbTbl""): .Clear" & vbCrLf
-    c = c & "    .AddItem S_STUD: .AddItem S_CLASS: .AddItem S_TEACH" & vbCrLf
-    c = c & "    .AddItem S_GUARD: .AddItem S_ATTEND: .AddItem S_FEE_STR: .AddItem S_FEE_PAY" & vbCrLf
-    c = c & "    .AddItem S_LOGS" & vbCrLf
-    c = c & "    .AddItem S_MARKS: .AddItem S_SUBJ: .AddItem S_GRADE" & vbCrLf
-    c = c & "  End With" & vbCrLf
-    c = c & "End Sub" & vbCrLf
-    c = c & "Public Sub LoadTable(frm As Object)" & vbCrLf
-    c = c & "  If frm.Controls(""cmbTbl"").Value = """" Then MsgBox ""Select a table."", vbExclamation: Exit Sub" & vbCrLf
-    c = c & "  Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets(frm.Controls(""cmbTbl"").Value)" & vbCrLf
-    c = c & "  Dim lst As Object: Set lst = frm.Controls(""lstData""): lst.Clear" & vbCrLf
-    c = c & "  Dim lc As Long: lc = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column" & vbCrLf
-    c = c & "  If lc > 10 Then lc = 10" & vbCrLf
-    c = c & "  lst.ColumnCount = lc: lst.ColumnWidths = String(lc - 1, ""60;"") & ""60""" & vbCrLf
-    c = c & "  Dim lr As Long: lr = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row" & vbCrLf
-    c = c & "  Dim i As Long, j As Long" & vbCrLf
-    c = c & "  For i = 1 To lr" & vbCrLf
-    c = c & "    lst.AddItem CStr(ws.Cells(i, 1).Value)" & vbCrLf
-    c = c & "    For j = 2 To lc: lst.List(i - 1, j - 1) = CStr(ws.Cells(i, j).Value): Next j" & vbCrLf
-    c = c & "  Next i" & vbCrLf
-    c = c & "  Call AuditLog(""Database"", ""Viewed table: "" & frm.Controls(""cmbTbl"").Value)" & vbCrLf
-    c = c & "End Sub" & vbCrLf
-    c = c & "Public Sub ExportCSV(frm As Object)" & vbCrLf
-    c = c & "  If frm.Controls(""cmbTbl"").Value = """" Then MsgBox ""Select a table."", vbExclamation: Exit Sub" & vbCrLf
-    c = c & "  Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets(frm.Controls(""cmbTbl"").Value)" & vbCrLf
-    c = c & "  Dim fp As String: fp = ThisWorkbook.Path & ""\"" & ws.Name & ""_"" & Format(Date, ""yyyymmdd"") & "".csv""" & vbCrLf
-    c = c & "  Dim fn As Integer: fn = FreeFile: Open fp For Output As #fn" & vbCrLf
-    c = c & "  Dim lr As Long: lr = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row" & vbCrLf
-    c = c & "  Dim lc As Long: lc = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column" & vbCrLf
-    c = c & "  Dim i As Long, j As Long, ln As String" & vbCrLf
-    c = c & "  For i = 1 To lr: ln = """"" & vbCrLf
-    c = c & "    For j = 1 To lc" & vbCrLf
-    c = c & "      If j > 1 Then ln = ln & "",""" & vbCrLf
-    c = c & "      ln = ln & CStr(ws.Cells(i, j).Value)" & vbCrLf
-    c = c & "    Next j" & vbCrLf
-    c = c & "    Print #fn, ln" & vbCrLf
-    c = c & "  Next i" & vbCrLf
-    c = c & "  Close #fn: MsgBox ""Exported to: "" & fp, vbInformation" & vbCrLf
-    c = c & "  Call AuditLog(""Database"", ""Exported table "" & frm.Controls(""cmbTbl"").Value & "" to CSV."")" & vbCrLf
-    c = c & "End Sub" & vbCrLf
-    m.CodeModule.AddFromString c
-End Sub
 
 ' -----------------------------------------------------------
 '  ThisWorkbook – Show Login on open, hide backend
@@ -2165,7 +2616,9 @@ Private Sub CreateThisWorkbookCode()
     c = c & "End Sub" & vbCrLf
     c = c & "Private Sub Workbook_BeforeClose(Cancel As Boolean)" & vbCrLf
     c = c & "  Call DisableFullScreen" & vbCrLf
-    c = c & "  If LoggedInName <> """" Then Call AutoBackup" & vbCrLf
+    c = c & "  On Error Resume Next" & vbCrLf
+    c = c & "  If LoggedInName <> """" Then Call ScheduledBackup" & vbCrLf
+    c = c & "  On Error GoTo 0" & vbCrLf
     c = c & "  ThisWorkbook.Saved = True" & vbCrLf
     c = c & "End Sub" & vbCrLf
     twb.CodeModule.AddFromString c
@@ -2864,6 +3317,74 @@ Private Sub CreateModDashboard()
     c = c & "DashErr:" & vbCrLf
     c = c & "  Application.ScreenUpdating = True: Application.Cursor = 1" & vbCrLf
     c = c & "  MsgBox ""Dashboard Error: "" & Err.Description, vbExclamation, ""Dashboard""" & vbCrLf
+    c = c & "End Sub" & vbCrLf & vbCrLf
+    ' ---- RefreshDashboardKPIs: lightweight live update of KPI card values ----
+    c = c & "Public Sub RefreshDashboardKPIs()" & vbCrLf
+    c = c & "  On Error Resume Next" & vbCrLf
+    c = c & "  Dim ws As Worksheet: Set ws = Nothing" & vbCrLf
+    c = c & "  Set ws = ThisWorkbook.Sheets(S_DASH)" & vbCrLf
+    c = c & "  If ws Is Nothing Then Exit Sub" & vbCrLf
+    c = c & "  Dim sW As Worksheet, fW As Worksheet, sF As Worksheet" & vbCrLf
+    c = c & "  Set sW = Nothing: Set fW = Nothing: Set sF = Nothing" & vbCrLf
+    c = c & "  Set sW = ThisWorkbook.Sheets(S_STUD)" & vbCrLf
+    c = c & "  Set fW = ThisWorkbook.Sheets(S_FEE_PAY)" & vbCrLf
+    c = c & "  Set sF = ThisWorkbook.Sheets(S_FEE_STR)" & vbCrLf
+    c = c & "  ' --- Calculate KPI values ---" & vbCrLf
+    c = c & "  Dim nAll As Long: nAll = 0" & vbCrLf
+    c = c & "  If Not sW Is Nothing Then nAll = Application.CountA(sW.Range(""B:B"")) - 1" & vbCrLf
+    c = c & "  If nAll < 0 Then nAll = 0" & vbCrLf
+    c = c & "  Dim fCol As Double: fCol = 0" & vbCrLf
+    c = c & "  If Not fW Is Nothing Then fCol = Application.Sum(fW.Range(""D:D""))" & vbCrLf
+    c = c & "  Dim fDue As Double: fDue = 0" & vbCrLf
+    c = c & "  If Not sF Is Nothing Then fDue = Application.Sum(sF.Range(""C:C"")) * nAll" & vbCrLf
+    c = c & "  Dim fOut As Double: fOut = fDue - fCol: If fOut < 0 Then fOut = 0" & vbCrLf
+    c = c & "  Dim attR As String: attR = Format(CalculateAttendanceRate(), ""0%"")" & vbCrLf
+    c = c & "  Dim perfLvl As String: perfLvl = GetTopPerformanceLevel()" & vbCrLf
+    c = c & "  ' --- Update KPI shapes by name ---" & vbCrLf
+    c = c & "  Dim shp As Shape" & vbCrLf
+    c = c & "  ws.Unprotect ""MIS2026""" & vbCrLf
+    c = c & "  ' k1: Total Learners" & vbCrLf
+    c = c & "  Set shp = ws.Shapes(""k1"")" & vbCrLf
+    c = c & "  If Not shp Is Nothing Then Call UpdateKPIText(shp, ChrW(9734) & "" TOTAL LEARNERS"", CStr(nAll))" & vbCrLf
+    c = c & "  ' k2: Attendance Rate" & vbCrLf
+    c = c & "  Set shp = ws.Shapes(""k2"")" & vbCrLf
+    c = c & "  If Not shp Is Nothing Then Call UpdateKPIText(shp, ChrW(9745) & "" ATTENDANCE RATE"", attR)" & vbCrLf
+    c = c & "  ' k3: Fee Collections" & vbCrLf
+    c = c & "  Set shp = ws.Shapes(""k3"")" & vbCrLf
+    c = c & "  If Not shp Is Nothing Then Call UpdateKPIText(shp, ChrW(9830) & "" FEE COLLECTIONS"", ""KSh "" & Format(fCol, ""#,##0""))" & vbCrLf
+    c = c & "  ' k4: Fees Outstanding" & vbCrLf
+    c = c & "  Set shp = ws.Shapes(""k4"")" & vbCrLf
+    c = c & "  If Not shp Is Nothing Then Call UpdateKPIText(shp, ChrW(9888) & "" FEES OUTSTANDING"", ""KSh "" & Format(fOut, ""#,##0""))" & vbCrLf
+    c = c & "  ' k5: Performance" & vbCrLf
+    c = c & "  Set shp = ws.Shapes(""k5"")" & vbCrLf
+    c = c & "  If Not shp Is Nothing Then Call UpdateKPIText(shp, ChrW(9733) & "" PERFORMANCE"", perfLvl)" & vbCrLf
+    c = c & "  ws.Protect ""MIS2026"", UserInterfaceOnly:=True" & vbCrLf
+    c = c & "End Sub" & vbCrLf & vbCrLf
+    ' ---- UpdateKPIText: helper to update shape text preserving formatting ----
+    c = c & "Private Sub UpdateKPIText(shp As Shape, tit As String, val As String)" & vbCrLf
+    c = c & "  On Error Resume Next" & vbCrLf
+    c = c & "  Dim oldClr As Long" & vbCrLf
+    c = c & "  ' Preserve the value color from the existing shape" & vbCrLf
+    c = c & "  Dim oldTxt As String: oldTxt = shp.TextFrame.Characters.Text" & vbCrLf
+    c = c & "  Dim titLen As Long: titLen = InStr(oldTxt, vbLf) - 1" & vbCrLf
+    c = c & "  If titLen > 0 And titLen < Len(oldTxt) Then" & vbCrLf
+    c = c & "    oldClr = shp.TextFrame.Characters(titLen + 2, Len(oldTxt) - titLen - 1).Font.Color" & vbCrLf
+    c = c & "  Else" & vbCrLf
+    c = c & "    oldClr = 0" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  ' Set new text" & vbCrLf
+    c = c & "  shp.TextFrame.Characters.Text = tit & vbLf & val" & vbCrLf
+    c = c & "  ' Reapply formatting" & vbCrLf
+    c = c & "  shp.TextFrame.Characters.Font.Name = ""Segoe UI""" & vbCrLf
+    c = c & "  shp.TextFrame.Characters(1, Len(tit)).Font.Size = 8" & vbCrLf
+    c = c & "  shp.TextFrame.Characters(1, Len(tit)).Font.Color = RGB(128, 128, 128)" & vbCrLf
+    c = c & "  shp.TextFrame.Characters(1, Len(tit)).Font.Bold = True" & vbCrLf
+    c = c & "  Dim vStart As Long: vStart = Len(tit) + 2" & vbCrLf
+    c = c & "  If vStart <= Len(shp.TextFrame.Characters.Text) Then" & vbCrLf
+    c = c & "    shp.TextFrame.Characters(vStart, Len(val)).Font.Size = 18" & vbCrLf
+    c = c & "    shp.TextFrame.Characters(vStart, Len(val)).Font.Bold = True" & vbCrLf
+    c = c & "    If oldClr <> 0 Then shp.TextFrame.Characters(vStart, Len(val)).Font.Color = oldClr" & vbCrLf
+    c = c & "  End If" & vbCrLf
     c = c & "End Sub" & vbCrLf
     ' ---- MakeKPI: informational card (dynamic width + height) ----
     c = c & "Private Sub MakeKPI(ws As Worksheet, nm As String, tit As String, val As String, L As Single, T As Single, w As Single, h As Single, clr As Long)" & vbCrLf
@@ -3647,9 +4168,13 @@ Private Sub CreateModBackup()
     Dim m As Object: Set m = AddMod("modBackup")
     Dim c$: c = "Option Explicit" & vbCrLf
     
-    ' ---- DataSheets: All data sheet names ----
+    ' ---- DataSheets: ALL data sheet names in the system ----
+    ' Covers every data sheet: Students, Classes, Teachers, Guardians,
+    ' Attendance, Fees, Payments, Users, Subjects, Marks, Grades,
+    ' Logs, Settings, CBC, Physical, Receipts, Promotions,
+    ' Report Output, Report Class, Template, Dashboard
     c = c & "Public Function DataSheets() As Variant" & vbCrLf
-    c = c & "  DataSheets = Array(S_STUD, S_CLASS, S_TEACH, S_GUARD, S_ATTEND, S_FEE_STR, S_FEE_PAY, S_USERS, S_SUBJ, S_MARKS, S_GRADE, S_LOGS, S_SETT, S_CBC_SKILLS, S_PHYSICAL, S_RCPT, S_PROMO)" & vbCrLf
+    c = c & "  DataSheets = Array(S_STUD, S_CLASS, S_TEACH, S_GUARD, S_ATTEND, S_FEE_STR, S_FEE_PAY, S_USERS, S_SUBJ, S_MARKS, S_GRADE, S_LOGS, S_SETT, S_CBC_SKILLS, S_PHYSICAL, S_RCPT, S_PROMO, S_RPT, S_RPT_CLS, S_TMP_RPT, S_DASH)" & vbCrLf
     c = c & "End Function" & vbCrLf
     
     ' ---- GetBackupFolder: ensures folder exists ----
@@ -3932,6 +4457,178 @@ Private Sub CreateModBackup()
     c = c & "    f = Dir()" & vbCrLf
     c = c & "  Loop" & vbCrLf
     c = c & "  If delCnt > 0 Then Call AuditLog(""Backup"", ""Cleaned "" & delCnt & "" backups older than "" & days & "" days."")" & vbCrLf
+    c = c & "End Sub" & vbCrLf
+    
+    ' ============================================================
+    '  GetSheetRowCount: count data rows for a sheet
+    ' ============================================================
+    c = c & "Private Function GetSheetRowCount(sn As String) As Long" & vbCrLf
+    c = c & "  On Error Resume Next" & vbCrLf
+    c = c & "  Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets(sn)" & vbCrLf
+    c = c & "  If ws Is Nothing Then GetSheetRowCount = -1: Exit Function" & vbCrLf
+    c = c & "  Dim lr As Long: lr = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row" & vbCrLf
+    c = c & "  If lr >= 2 Then GetSheetRowCount = lr - 1 Else GetSheetRowCount = 0" & vbCrLf
+    c = c & "  On Error GoTo 0" & vbCrLf
+    c = c & "End Function" & vbCrLf
+    
+    ' ============================================================
+    '  DataSummary: Show row counts for every data sheet
+    ' ============================================================
+    c = c & "Public Sub DataSummary()" & vbCrLf
+    c = c & "  Dim sheets As Variant: sheets = DataSheets()" & vbCrLf
+    c = c & "  Dim msg As String, totalRows As Long, totalSheets As Long" & vbCrLf
+    c = c & "  msg = ChrW(9733) & "" DATABASE SUMMARY"" & vbLf & String(45, ""-"") & vbLf" & vbCrLf
+    c = c & "  Dim i As Long" & vbCrLf
+    c = c & "  For i = LBound(sheets) To UBound(sheets)" & vbCrLf
+    c = c & "    Dim sn As String: sn = CStr(sheets(i))" & vbCrLf
+    c = c & "    Dim rc As Long: rc = GetSheetRowCount(sn)" & vbCrLf
+    c = c & "    If rc >= 0 Then" & vbCrLf
+    c = c & "      totalSheets = totalSheets + 1" & vbCrLf
+    c = c & "      totalRows = totalRows + rc" & vbCrLf
+    c = c & "      Dim icon As String" & vbCrLf
+    c = c & "      If rc > 0 Then icon = ChrW(10003) Else icon = ChrW(9675)" & vbCrLf
+    c = c & "      msg = msg & ""  "" & icon & "" "" & sn & "": "" & Format(rc, ""#,##0"") & "" records"" & vbLf" & vbCrLf
+    c = c & "    Else" & vbCrLf
+    c = c & "      msg = msg & ""  "" & ChrW(10007) & "" "" & sn & "": NOT FOUND"" & vbLf" & vbCrLf
+    c = c & "    End If" & vbCrLf
+    c = c & "  Next i" & vbCrLf
+    c = c & "  msg = msg & vbLf & String(45, ""-"") & vbLf" & vbCrLf
+    c = c & "  msg = msg & ""Total: "" & totalSheets & "" sheets, "" & Format(totalRows, ""#,##0"") & "" data records"" & vbLf" & vbCrLf
+    c = c & "  msg = msg & ""Backup coverage: "" & totalSheets & ""/"" & (UBound(sheets) - LBound(sheets) + 1) & "" sheets""" & vbCrLf
+    c = c & "  MsgBox msg, vbInformation, ""Database Summary""" & vbCrLf
+    c = c & "End Sub" & vbCrLf
+    
+    ' ============================================================
+    '  ScheduledBackup: Auto-backup called on workbook close
+    ' ============================================================
+    c = c & "Public Sub ScheduledBackup()" & vbCrLf
+    c = c & "  On Error Resume Next" & vbCrLf
+    c = c & "  Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets(S_SETT)" & vbCrLf
+    c = c & "  Dim autoEnabled As Boolean: autoEnabled = True" & vbCrLf
+    c = c & "  If Not ws Is Nothing Then" & vbCrLf
+    c = c & "    Dim i As Long" & vbCrLf
+    c = c & "    For i = 2 To ws.Cells(ws.Rows.Count, 1).End(xlUp).Row" & vbCrLf
+    c = c & "      If UCase(CStr(ws.Cells(i, 1).Value)) = ""AUTO_BACKUP"" Then" & vbCrLf
+    c = c & "        If UCase(CStr(ws.Cells(i, 2).Value)) = ""NO"" Or CStr(ws.Cells(i, 2).Value) = ""0"" Then autoEnabled = False" & vbCrLf
+    c = c & "        Exit For" & vbCrLf
+    c = c & "      End If" & vbCrLf
+    c = c & "    Next i" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  If Not autoEnabled Then Exit Sub" & vbCrLf
+    c = c & "  Dim studWs As Worksheet: Set studWs = ThisWorkbook.Sheets(S_STUD)" & vbCrLf
+    c = c & "  If studWs Is Nothing Then Exit Sub" & vbCrLf
+    c = c & "  If studWs.Cells(studWs.Rows.Count, 1).End(xlUp).Row < 2 Then Exit Sub" & vbCrLf
+    c = c & "  Dim bp As String: bp = GetBackupFolder()" & vbCrLf
+    c = c & "  Dim f As String: f = Dir(bp & ""\*.xlsm"")" & vbCrLf
+    c = c & "  Dim latestDt As Date" & vbCrLf
+    c = c & "  Do While f <> """"" & vbCrLf
+    c = c & "    Dim fdt As Date: fdt = FileDateTime(bp & ""\"" & f)" & vbCrLf
+    c = c & "    If fdt > latestDt Then latestDt = fdt" & vbCrLf
+    c = c & "    f = Dir()" & vbCrLf
+    c = c & "  Loop" & vbCrLf
+    c = c & "  If latestDt > 0 Then" & vbCrLf
+    c = c & "    If DateDiff(""h"", latestDt, Now) < 4 Then Exit Sub" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  Call AutoBackup(""AutoSave"")" & vbCrLf
+    c = c & "  On Error GoTo 0" & vbCrLf
+    c = c & "End Sub" & vbCrLf
+    
+    ' ============================================================
+    '  ExportAllDataToCSV: Export each data sheet to CSV
+    ' ============================================================
+    c = c & "Public Sub ExportAllDataToCSV()" & vbCrLf
+    c = c & "  On Error GoTo CsvErr" & vbCrLf
+    c = c & "  Dim bp As String: bp = ThisWorkbook.Path & ""\CSV_Export""" & vbCrLf
+    c = c & "  On Error Resume Next" & vbCrLf
+    c = c & "  If Dir(bp, vbDirectory) = """" Then MkDir bp" & vbCrLf
+    c = c & "  On Error GoTo CsvErr" & vbCrLf
+    c = c & "  Dim ts As String: ts = Format(Now, ""yyyymmdd_hhnnss"")" & vbCrLf
+    c = c & "  Dim exportDir As String: exportDir = bp & ""\"" & ts" & vbCrLf
+    c = c & "  MkDir exportDir" & vbCrLf
+    c = c & "  Dim sheets As Variant: sheets = DataSheets()" & vbCrLf
+    c = c & "  Dim okCnt As Long, skipCnt As Long, i As Long" & vbCrLf
+    c = c & "  Application.StatusBar = ""Exporting data to CSV...""" & vbCrLf
+    c = c & "  For i = LBound(sheets) To UBound(sheets)" & vbCrLf
+    c = c & "    Dim sn As String: sn = CStr(sheets(i))" & vbCrLf
+    c = c & "    Dim ws2 As Worksheet: Set ws2 = Nothing" & vbCrLf
+    c = c & "    On Error Resume Next: Set ws2 = ThisWorkbook.Sheets(sn): On Error GoTo CsvErr" & vbCrLf
+    c = c & "    If ws2 Is Nothing Then skipCnt = skipCnt + 1: GoTo NextCSV" & vbCrLf
+    c = c & "    Dim lr As Long: lr = ws2.Cells(ws2.Rows.Count, 1).End(xlUp).Row" & vbCrLf
+    c = c & "    If lr < 1 Then skipCnt = skipCnt + 1: GoTo NextCSV" & vbCrLf
+    c = c & "    Dim lc As Long: lc = ws2.Cells(1, ws2.Columns.Count).End(xlToLeft).Column" & vbCrLf
+    c = c & "    If lc < 1 Then lc = 1" & vbCrLf
+    c = c & "    Application.StatusBar = ""Exporting: "" & sn & ""...""" & vbCrLf
+    c = c & "    Dim csvPath As String: csvPath = exportDir & ""\"" & sn & "".csv""" & vbCrLf
+    c = c & "    Dim fn As Integer: fn = FreeFile" & vbCrLf
+    c = c & "    Open csvPath For Output As #fn" & vbCrLf
+    c = c & "    Dim r As Long, cc As Long" & vbCrLf
+    c = c & "    For r = 1 To lr" & vbCrLf
+    c = c & "      Dim csvLn As String: csvLn = """"" & vbCrLf
+    c = c & "      For cc = 1 To lc" & vbCrLf
+    c = c & "        Dim cv As String: cv = CStr(ws2.Cells(r, cc).Value)" & vbCrLf
+    c = c & "        If InStr(cv, "","") > 0 Or InStr(cv, """""""") > 0 Then cv = """""""" & Replace(cv, """""""", """""""""""") & """"""""""" & vbCrLf
+    c = c & "        If cc > 1 Then csvLn = csvLn & "",""" & vbCrLf
+    c = c & "        csvLn = csvLn & cv" & vbCrLf
+    c = c & "      Next cc" & vbCrLf
+    c = c & "      Print #fn, csvLn" & vbCrLf
+    c = c & "    Next r" & vbCrLf
+    c = c & "    Close #fn" & vbCrLf
+    c = c & "    okCnt = okCnt + 1" & vbCrLf
+    c = c & "NextCSV:" & vbCrLf
+    c = c & "  Next i" & vbCrLf
+    c = c & "  Application.StatusBar = False" & vbCrLf
+    c = c & "  Call AuditLog(""Export"", ""Exported "" & okCnt & "" sheets to CSV: "" & exportDir)" & vbCrLf
+    c = c & "  MsgBox ""CSV Export Complete!"" & vbLf & vbLf & ""Exported: "" & okCnt & "" sheets"" & vbLf & ""Skipped: "" & skipCnt & vbLf & vbLf & ""Location:"" & vbLf & exportDir, vbInformation, ""Export Complete""" & vbCrLf
+    c = c & "  Exit Sub" & vbCrLf
+    c = c & "CsvErr:" & vbCrLf
+    c = c & "  Application.StatusBar = False" & vbCrLf
+    c = c & "  MsgBox ""CSV Export error: "" & Err.Description, vbCritical, ""Export Failed""" & vbCrLf
+    c = c & "End Sub" & vbCrLf
+    
+    ' ============================================================
+    '  VerifyBackup: Compare current data vs a backup file
+    ' ============================================================
+    c = c & "Public Sub VerifyBackup()" & vbCrLf
+    c = c & "  On Error GoTo VErr" & vbCrLf
+    c = c & "  Dim fp As Variant" & vbCrLf
+    c = c & "  fp = Application.GetOpenFilename(""Excel Files (*.xlsm),*.xlsm"", , ""Select Backup to Verify"", , False)" & vbCrLf
+    c = c & "  If fp = False Then Exit Sub" & vbCrLf
+    c = c & "  Application.ScreenUpdating = False" & vbCrLf
+    c = c & "  Dim bkWb As Workbook" & vbCrLf
+    c = c & "  Set bkWb = Workbooks.Open(CStr(fp), ReadOnly:=True, UpdateLinks:=0)" & vbCrLf
+    c = c & "  If bkWb Is Nothing Then MsgBox ""Cannot open file!"", vbCritical: GoTo VCleanup" & vbCrLf
+    c = c & "  Dim sheets As Variant: sheets = DataSheets()" & vbCrLf
+    c = c & "  Dim msg As String, i As Long, matchCnt As Long, diffCnt As Long" & vbCrLf
+    c = c & "  msg = ChrW(9733) & "" BACKUP VERIFICATION"" & vbLf & String(50, ""-"") & vbLf" & vbCrLf
+    c = c & "  msg = msg & ""File: "" & Dir(CStr(fp)) & vbLf & vbLf" & vbCrLf
+    c = c & "  For i = LBound(sheets) To UBound(sheets)" & vbCrLf
+    c = c & "    Dim sn As String: sn = CStr(sheets(i))" & vbCrLf
+    c = c & "    Dim curRows As Long: curRows = GetSheetRowCount(sn)" & vbCrLf
+    c = c & "    Dim bkRows As Long: bkRows = -1" & vbCrLf
+    c = c & "    On Error Resume Next" & vbCrLf
+    c = c & "    Dim bkWs As Worksheet: Set bkWs = bkWb.Sheets(sn)" & vbCrLf
+    c = c & "    If Not bkWs Is Nothing Then" & vbCrLf
+    c = c & "      Dim bkLr As Long: bkLr = bkWs.Cells(bkWs.Rows.Count, 1).End(xlUp).Row" & vbCrLf
+    c = c & "      If bkLr >= 2 Then bkRows = bkLr - 1 Else bkRows = 0" & vbCrLf
+    c = c & "    End If" & vbCrLf
+    c = c & "    Set bkWs = Nothing: On Error GoTo VErr" & vbCrLf
+    c = c & "    Dim sts As String" & vbCrLf
+    c = c & "    If bkRows = -1 Then sts = ChrW(10007) & "" MISSING""" & vbCrLf
+    c = c & "    If bkRows >= 0 And curRows = bkRows Then sts = ChrW(10003) & "" OK"": matchCnt = matchCnt + 1" & vbCrLf
+    c = c & "    If bkRows >= 0 And curRows <> bkRows Then sts = ChrW(9888) & "" DIFF("" & (curRows - bkRows) & "")"": diffCnt = diffCnt + 1" & vbCrLf
+    c = c & "    msg = msg & ""  "" & sn & "": Cur="" & curRows & "" Bak="" & bkRows & "" "" & sts & vbLf" & vbCrLf
+    c = c & "  Next i" & vbCrLf
+    c = c & "  msg = msg & vbLf & ""Match: "" & matchCnt & "" | Diff: "" & diffCnt" & vbCrLf
+    c = c & "  On Error Resume Next: bkWb.Close False: On Error GoTo 0" & vbCrLf
+    c = c & "VCleanup:" & vbCrLf
+    c = c & "  Application.ScreenUpdating = True" & vbCrLf
+    c = c & "  MsgBox msg, IIf(diffCnt > 0, vbExclamation, vbInformation), ""Backup Verification""" & vbCrLf
+    c = c & "  Exit Sub" & vbCrLf
+    c = c & "VErr:" & vbCrLf
+    c = c & "  Application.ScreenUpdating = True" & vbCrLf
+    c = c & "  On Error Resume Next: If Not bkWb Is Nothing Then bkWb.Close False" & vbCrLf
+    c = c & "  On Error GoTo 0" & vbCrLf
+    c = c & "  MsgBox ""Verify error: "" & Err.Description, vbCritical" & vbCrLf
     c = c & "End Sub" & vbCrLf
     
     m.CodeModule.AddFromString c
@@ -4386,10 +5083,56 @@ End Sub
 Private Sub CreateModReportCards()
     Dim m As Object: Set m = AddMod("modReportCards")
     Dim c$: c = "Option Explicit" & vbCrLf
+    c = c & "Public gPdfSaveDir As String" & vbCrLf
     c = c & "Private Const HDR_CLR As Long = 1976436" & vbCrLf
     c = c & "Private Const HDR2_CLR As Long = 5455702" & vbCrLf
     c = c & "Private Const COLS As Long = 7" & vbCrLf
     c = c & "Public gReportMode As String" & vbCrLf
+    c = c & "' --- Performance cache arrays ---" & vbCrLf
+    c = c & "Private mStudData As Variant" & vbCrLf
+    c = c & "Private mMarksData As Variant" & vbCrLf
+    c = c & "Private mSkillsData As Variant" & vbCrLf
+    c = c & "Private mPhysData As Variant" & vbCrLf
+    c = c & "Private mAttendData As Variant" & vbCrLf
+    c = c & "Private mStudIdx As Object" & vbCrLf
+    c = c & "Private mCached As Boolean" & vbCrLf
+    c = c & "Private mRankCache As Object" & vbCrLf
+    c = c & "' --- CacheReportData: bulk-load all sheets into arrays ---" & vbCrLf
+    c = c & "Public Sub CacheReportData()" & vbCrLf
+    c = c & "  If mCached Then Exit Sub" & vbCrLf
+    c = c & "  Dim ws As Worksheet, lr As Long, lc As Long" & vbCrLf
+    c = c & "  Set ws = ThisWorkbook.Sheets(S_STUD)" & vbCrLf
+    c = c & "  lr = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row: lc = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column" & vbCrLf
+    c = c & "  If lr >= 2 Then mStudData = ws.Range(ws.Cells(1,1), ws.Cells(lr, lc)).Value Else mStudData = Empty" & vbCrLf
+    c = c & "  Set ws = ThisWorkbook.Sheets(S_MARKS)" & vbCrLf
+    c = c & "  lr = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row: lc = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column" & vbCrLf
+    c = c & "  If lr >= 2 Then mMarksData = ws.Range(ws.Cells(1,1), ws.Cells(lr, lc)).Value Else mMarksData = Empty" & vbCrLf
+    c = c & "  Set ws = ThisWorkbook.Sheets(S_CBC_SKILLS)" & vbCrLf
+    c = c & "  lr = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row: lc = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column" & vbCrLf
+    c = c & "  If lr >= 2 Then mSkillsData = ws.Range(ws.Cells(1,1), ws.Cells(lr, lc)).Value Else mSkillsData = Empty" & vbCrLf
+    c = c & "  Set ws = ThisWorkbook.Sheets(S_PHYSICAL)" & vbCrLf
+    c = c & "  lr = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row: lc = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column" & vbCrLf
+    c = c & "  If lr >= 2 Then mPhysData = ws.Range(ws.Cells(1,1), ws.Cells(lr, lc)).Value Else mPhysData = Empty" & vbCrLf
+    c = c & "  Set ws = ThisWorkbook.Sheets(S_ATTEND)" & vbCrLf
+    c = c & "  lr = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row: lc = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column" & vbCrLf
+    c = c & "  If lr >= 2 Then mAttendData = ws.Range(ws.Cells(1,1), ws.Cells(lr, lc)).Value Else mAttendData = Empty" & vbCrLf
+    c = c & "  ' --- Build student index ---" & vbCrLf
+    c = c & "  Set mStudIdx = CreateObject(""Scripting.Dictionary"")" & vbCrLf
+    c = c & "  If IsArray(mStudData) Then" & vbCrLf
+    c = c & "    Dim i As Long" & vbCrLf
+    c = c & "    For i = 2 To UBound(mStudData, 1)" & vbCrLf
+    c = c & "      mStudIdx(CStr(mStudData(i, cSID))) = i" & vbCrLf
+    c = c & "    Next i" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  Set mRankCache = CreateObject(""Scripting.Dictionary"")" & vbCrLf
+    c = c & "  mCached = True" & vbCrLf
+    c = c & "End Sub" & vbCrLf
+    c = c & "Public Sub ClearReportCache()" & vbCrLf
+    c = c & "  mStudData = Empty: mMarksData = Empty: mSkillsData = Empty" & vbCrLf
+    c = c & "  mPhysData = Empty: mAttendData = Empty" & vbCrLf
+    c = c & "  Set mStudIdx = Nothing: Set mRankCache = Nothing" & vbCrLf
+    c = c & "  mCached = False" & vbCrLf
+    c = c & "End Sub" & vbCrLf
     ' ---- SetupA4Page: configure for A4 portrait ----
     c = c & "Private Sub SetupA4Page(ws As Worksheet, lastRow As Long)" & vbCrLf
     c = c & "  With ws.PageSetup" & vbCrLf
@@ -4439,36 +5182,52 @@ Private Sub CreateModReportCards()
     c = c & "Public Sub ReportCardMenu()" & vbCrLf
     c = c & "  frmReportCenter.Show vbModeless" & vbCrLf
     c = c & "End Sub" & vbCrLf
-    ' ---- GetStudentRank ----
+    ' ---- GetStudentRank (cached) ----
     c = c & "Public Function GetStudentRank(sID As String, cls As String, trm As String, yr As String) As String" & vbCrLf
-    c = c & "  Dim sW As Worksheet: Set sW = ThisWorkbook.Sheets(S_STUD)" & vbCrLf
-    c = c & "  Dim mW As Worksheet: Set mW = ThisWorkbook.Sheets(S_MARKS)" & vbCrLf
+    c = c & "  Dim cKey As String: cKey = cls & ""|"" & trm & ""|"" & yr" & vbCrLf
+    c = c & "  ' --- Check rank cache first ---" & vbCrLf
+    c = c & "  If Not mRankCache Is Nothing Then" & vbCrLf
+    c = c & "    If mRankCache.Exists(cKey & ""|"" & sID) Then" & vbCrLf
+    c = c & "      GetStudentRank = mRankCache(cKey & ""|"" & sID)" & vbCrLf
+    c = c & "      Exit Function" & vbCrLf
+    c = c & "    End If" & vbCrLf
+    c = c & "  Else" & vbCrLf
+    c = c & "    Set mRankCache = CreateObject(""Scripting.Dictionary"")" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  Call CacheReportData" & vbCrLf
+    c = c & "  If Not IsArray(mStudData) Or Not IsArray(mMarksData) Then GetStudentRank = ""-"": Exit Function" & vbCrLf
     c = c & "  Dim avgs() As Double, sids() As String, cnt As Long: cnt = 0" & vbCrLf
-    c = c & "  Dim lr As Long: lr = sW.Cells(sW.Rows.Count,1).End(xlUp).Row" & vbCrLf
-    c = c & "  ReDim avgs(1 To lr): ReDim sids(1 To lr)" & vbCrLf
+    c = c & "  Dim sLr As Long: sLr = UBound(mStudData, 1)" & vbCrLf
+    c = c & "  ReDim avgs(1 To sLr): ReDim sids(1 To sLr)" & vbCrLf
     c = c & "  Dim i As Long, j As Long" & vbCrLf
-    c = c & "  For i = 2 To lr" & vbCrLf
-    c = c & "    If sW.Cells(i,cCLS).Value = cls And sW.Cells(i,cST).Value = ""Active"" Then" & vbCrLf
-    c = c & "      cnt = cnt + 1: sids(cnt) = CStr(sW.Cells(i,cSID).Value)" & vbCrLf
+    c = c & "  Dim mLr As Long: mLr = UBound(mMarksData, 1)" & vbCrLf
+    c = c & "  For i = 2 To sLr" & vbCrLf
+    c = c & "    If CStr(mStudData(i,cCLS)) = cls And CStr(mStudData(i,cST)) = ""Active"" Then" & vbCrLf
+    c = c & "      cnt = cnt + 1: sids(cnt) = CStr(mStudData(i,cSID))" & vbCrLf
     c = c & "      Dim tot As Double, mx As Double: tot = 0: mx = 0" & vbCrLf
-    c = c & "      For j = 2 To mW.Cells(mW.Rows.Count,1).End(xlUp).Row" & vbCrLf
-    c = c & "        If CStr(mW.Cells(j,2).Value) = sids(cnt) And CStr(mW.Cells(j,4).Value) = trm And CStr(mW.Cells(j,5).Value) = yr Then" & vbCrLf
-    c = c & "          tot = tot + mW.Cells(j,7).Value: mx = mx + mW.Cells(j,8).Value" & vbCrLf
+    c = c & "      For j = 2 To mLr" & vbCrLf
+    c = c & "        If CStr(mMarksData(j,2)) = sids(cnt) And CStr(mMarksData(j,4)) = trm And CStr(mMarksData(j,5)) = yr Then" & vbCrLf
+    c = c & "          tot = tot + CDbl(mMarksData(j,7)): mx = mx + CDbl(mMarksData(j,8))" & vbCrLf
     c = c & "        End If" & vbCrLf
     c = c & "      Next j" & vbCrLf
     c = c & "      If mx > 0 Then avgs(cnt) = (tot / mx) * 100 Else avgs(cnt) = 0" & vbCrLf
     c = c & "    End If" & vbCrLf
     c = c & "  Next i" & vbCrLf
     c = c & "  If cnt = 0 Then GetStudentRank = ""-"": Exit Function" & vbCrLf
-    c = c & "  Dim myAvg As Double: myAvg = 0" & vbCrLf
+    c = c & "  ' --- Compute all ranks and cache them ---" & vbCrLf
+    c = c & "  Dim k As Long, rnk As Long" & vbCrLf
     c = c & "  For i = 1 To cnt" & vbCrLf
-    c = c & "    If sids(i) = sID Then myAvg = avgs(i): Exit For" & vbCrLf
+    c = c & "    rnk = 1" & vbCrLf
+    c = c & "    For k = 1 To cnt" & vbCrLf
+    c = c & "      If avgs(k) > avgs(i) Then rnk = rnk + 1" & vbCrLf
+    c = c & "    Next k" & vbCrLf
+    c = c & "    mRankCache(cKey & ""|"" & sids(i)) = rnk & "" of "" & cnt" & vbCrLf
     c = c & "  Next i" & vbCrLf
-    c = c & "  Dim rank As Long: rank = 1" & vbCrLf
-    c = c & "  For i = 1 To cnt" & vbCrLf
-    c = c & "    If avgs(i) > myAvg Then rank = rank + 1" & vbCrLf
-    c = c & "  Next i" & vbCrLf
-    c = c & "  GetStudentRank = rank & "" of "" & cnt" & vbCrLf
+    c = c & "  If mRankCache.Exists(cKey & ""|"" & sID) Then" & vbCrLf
+    c = c & "    GetStudentRank = mRankCache(cKey & ""|"" & sID)" & vbCrLf
+    c = c & "  Else" & vbCrLf
+    c = c & "    GetStudentRank = ""-""" & vbCrLf
+    c = c & "  End If" & vbCrLf
     c = c & "End Function" & vbCrLf
     ' ---- GenerateCBCReport: A4-optimized report card ----
     c = c & "Public Sub GenerateCBCReport(sID As String, trm As String, yr As String)" & vbCrLf
@@ -4479,20 +5238,15 @@ Private Sub CreateModReportCards()
     c = c & "  tmp.Cells.Clear: tmp.Visible = xlSheetVisible: tmp.Activate" & vbCrLf
     c = c & "  tmp.DisplayPageBreaks = False: ActiveWindow.DisplayGridlines = False" & vbCrLf
     c = c & "  tmp.Cells.Font.Name = ""Calibri"": tmp.Cells.Font.Size = 9" & vbCrLf
-    c = c & "  Dim sW As Worksheet: Set sW = ThisWorkbook.Sheets(S_STUD)" & vbCrLf
-    c = c & "  Dim mW As Worksheet: Set mW = ThisWorkbook.Sheets(S_MARKS)" & vbCrLf
+    c = c & "  Call CacheReportData" & vbCrLf
     c = c & "  Dim i As Long, r As Long" & vbCrLf
     c = c & "  Dim sName As String, sAdm As String, sCls As String, sGen As String, sDOB As String, sUPI As String, sStrm As String" & vbCrLf
-    c = c & "  For i = 2 To sW.Cells(sW.Rows.Count,1).End(xlUp).Row" & vbCrLf
-    c = c & "    If CStr(sW.Cells(i,cSID).Value) = sID Then" & vbCrLf
-    c = c & "      sName = sW.Cells(i,cFN).Value & "" "" & sW.Cells(i,cLN).Value" & vbCrLf
-    c = c & "      sAdm = CStr(sW.Cells(i,cADM).Value): sCls = CStr(sW.Cells(i,cCLS).Value)" & vbCrLf
-    c = c & "      sGen = CStr(sW.Cells(i,cGEN).Value): sDOB = CStr(sW.Cells(i,cDOB).Value)" & vbCrLf
-    c = c & "      sUPI = CStr(sW.Cells(i,cUPI).Value): sStrm = CStr(sW.Cells(i,cSTRM).Value)" & vbCrLf
-    c = c & "      Exit For" & vbCrLf
-    c = c & "    End If" & vbCrLf
-    c = c & "  Next i" & vbCrLf
-    c = c & "  If sName = """" Then MsgBox ""Student not found!"", vbCritical: Exit Sub" & vbCrLf
+    c = c & "  If Not IsArray(mStudData) Or Not mStudIdx.Exists(sID) Then MsgBox ""Student not found!"", vbCritical: Exit Sub" & vbCrLf
+    c = c & "  Dim sRow As Long: sRow = mStudIdx(sID)" & vbCrLf
+    c = c & "  sName = CStr(mStudData(sRow,cFN)) & "" "" & CStr(mStudData(sRow,cLN))" & vbCrLf
+    c = c & "  sAdm = CStr(mStudData(sRow,cADM)): sCls = CStr(mStudData(sRow,cCLS))" & vbCrLf
+    c = c & "  sGen = CStr(mStudData(sRow,cGEN)): sDOB = CStr(mStudData(sRow,cDOB))" & vbCrLf
+    c = c & "  sUPI = CStr(mStudData(sRow,cUPI)): sStrm = CStr(mStudData(sRow,cSTRM))" & vbCrLf
     c = c & "  r = 1" & vbCrLf
     c = c & "  tmp.Range(""A1:G1"").Merge: tmp.Cells(1,1).Value = ""REPUBLIC OF KENYA""" & vbCrLf
     c = c & "  tmp.Cells(1,1).Font.Size = 8: tmp.Cells(1,1).HorizontalAlignment = xlCenter: tmp.Rows(1).RowHeight = 14" & vbCrLf
@@ -4526,12 +5280,13 @@ Private Sub CreateModReportCards()
     c = c & "  Dim hdrRow As Long: hdrRow = r: r = r + 1" & vbCrLf
     c = c & "  Dim totS As Double, totM As Double, subCnt As Long, totPts As Long" & vbCrLf
     c = c & "  totS = 0: totM = 0: subCnt = 0: totPts = 0" & vbCrLf
-    c = c & "  For i = 2 To mW.Cells(mW.Rows.Count,1).End(xlUp).Row" & vbCrLf
-    c = c & "    If CStr(mW.Cells(i,2).Value) = sID And CStr(mW.Cells(i,4).Value) = trm And CStr(mW.Cells(i,5).Value) = yr Then" & vbCrLf
-    c = c & "      Dim sc As Double: sc = mW.Cells(i,7).Value" & vbCrLf
-    c = c & "      Dim mx2 As Double: mx2 = mW.Cells(i,8).Value" & vbCrLf
+    c = c & "  If IsArray(mMarksData) Then" & vbCrLf
+    c = c & "  For i = 2 To UBound(mMarksData, 1)" & vbCrLf
+    c = c & "    If CStr(mMarksData(i,2)) = sID And CStr(mMarksData(i,4)) = trm And CStr(mMarksData(i,5)) = yr Then" & vbCrLf
+    c = c & "      Dim sc As Double: sc = CDbl(mMarksData(i,7))" & vbCrLf
+    c = c & "      Dim mx2 As Double: mx2 = CDbl(mMarksData(i,8))" & vbCrLf
     c = c & "      Dim perc As Double: If mx2 > 0 Then perc = (sc / mx2) * 100 Else perc = 0" & vbCrLf
-    c = c & "      tmp.Cells(r,1).Value = GetSubName(mW.Cells(i,6).Value)" & vbCrLf
+    c = c & "      tmp.Cells(r,1).Value = GetSubName(CStr(mMarksData(i,6)))" & vbCrLf
     c = c & "      tmp.Cells(r,2).Value = sc: tmp.Cells(r,3).Value = mx2" & vbCrLf
     c = c & "      tmp.Cells(r,4).Value = Round(perc, 1) & ""%""" & vbCrLf
     c = c & "      tmp.Cells(r,5).Value = GetCBCLevel(perc)" & vbCrLf
@@ -4544,6 +5299,7 @@ Private Sub CreateModReportCards()
     c = c & "      subCnt = subCnt + 1: r = r + 1" & vbCrLf
     c = c & "    End If" & vbCrLf
     c = c & "  Next i" & vbCrLf
+    c = c & "  End If" & vbCrLf
     c = c & "  Dim meanP As Double: If totM > 0 Then meanP = (totS / totM) * 100 Else meanP = 0" & vbCrLf
     c = c & "  tmp.Range(""A"" & r & "":G"" & r).Interior.Color = RGB(31,56,100)" & vbCrLf
     c = c & "  tmp.Range(""A"" & r & "":G"" & r).Font.Color = vbWhite: tmp.Range(""A"" & r & "":G"" & r).Font.Bold = True" & vbCrLf
@@ -4563,34 +5319,39 @@ Private Sub CreateModReportCards()
     c = c & "  tmp.Cells(r,1).Value = ""Competency"": tmp.Cells(r,3).Value = ""Rating"": tmp.Cells(r,5).Value = ""Remarks""" & vbCrLf
     c = c & "  tmp.Range(""A"" & r & "":G"" & r).Font.Bold = True: tmp.Range(""A"" & r & "":G"" & r).Font.Size = 8" & vbCrLf
     c = c & "  tmp.Range(""A"" & r & "":G"" & r).Interior.Color = RGB(220,230,241)" & vbCrLf
-    c = c & "  Dim skW As Worksheet: Set skW = ThisWorkbook.Sheets(S_CBC_SKILLS): r = r + 1" & vbCrLf
+    c = c & "  r = r + 1" & vbCrLf
     c = c & "  Dim hasSkills As Boolean: hasSkills = False" & vbCrLf
-    c = c & "  For i = 2 To skW.Cells(skW.Rows.Count,1).End(xlUp).Row" & vbCrLf
-    c = c & "    If CStr(skW.Cells(i,2).Value) = sID And CStr(skW.Cells(i,3).Value) = trm And CStr(skW.Cells(i,4).Value) = yr Then" & vbCrLf
-    c = c & "      tmp.Cells(r,1).Value = skW.Cells(i,6).Value: tmp.Cells(r,3).Value = skW.Cells(i,7).Value" & vbCrLf
-    c = c & "      If skW.Cells(i,7).Value >= 3 Then tmp.Cells(r,5).Value = ""Good"" Else tmp.Cells(r,5).Value = ""Needs Support""" & vbCrLf
+    c = c & "  If IsArray(mSkillsData) Then" & vbCrLf
+    c = c & "  For i = 2 To UBound(mSkillsData, 1)" & vbCrLf
+    c = c & "    If CStr(mSkillsData(i,2)) = sID And CStr(mSkillsData(i,3)) = trm And CStr(mSkillsData(i,4)) = yr Then" & vbCrLf
+    c = c & "      tmp.Cells(r,1).Value = mSkillsData(i,6): tmp.Cells(r,3).Value = mSkillsData(i,7)" & vbCrLf
+    c = c & "      If mSkillsData(i,7) >= 3 Then tmp.Cells(r,5).Value = ""Good"" Else tmp.Cells(r,5).Value = ""Needs Support""" & vbCrLf
     c = c & "      tmp.Rows(r).RowHeight = 14: hasSkills = True: r = r + 1" & vbCrLf
     c = c & "    End If" & vbCrLf
     c = c & "  Next i" & vbCrLf
+    c = c & "  End If" & vbCrLf
     c = c & "  If Not hasSkills Then tmp.Cells(r,1).Value = ""(No competency data)"": tmp.Cells(r,1).Font.Italic = True: tmp.Rows(r).RowHeight = 14: r = r + 1" & vbCrLf
     c = c & "  r = r + 1: Call SecHdr(tmp, r, "" 3. PHYSICAL & HEALTH"", COLS)" & vbCrLf
-    c = c & "  Dim phW As Worksheet: Set phW = ThisWorkbook.Sheets(S_PHYSICAL): r = r + 1" & vbCrLf
+    c = c & "  r = r + 1" & vbCrLf
     c = c & "  Dim hasPh As Boolean: hasPh = False" & vbCrLf
-    c = c & "  For i = 2 To phW.Cells(phW.Rows.Count,1).End(xlUp).Row" & vbCrLf
-    c = c & "    If CStr(phW.Cells(i,2).Value) = sID And CStr(phW.Cells(i,3).Value) = trm And CStr(phW.Cells(i,4).Value) = yr Then" & vbCrLf
-    c = c & "      tmp.Cells(r,1).Value = ""Height(cm):"": tmp.Cells(r,2).Value = phW.Cells(i,5).Value" & vbCrLf
-    c = c & "      tmp.Cells(r,3).Value = ""Weight(kg):"": tmp.Cells(r,4).Value = phW.Cells(i,6).Value" & vbCrLf
-    c = c & "      tmp.Cells(r,5).Value = ""BMI:"": tmp.Cells(r,6).Value = phW.Cells(i,7).Value" & vbCrLf
+    c = c & "  If IsArray(mPhysData) Then" & vbCrLf
+    c = c & "  For i = 2 To UBound(mPhysData, 1)" & vbCrLf
+    c = c & "    If CStr(mPhysData(i,2)) = sID And CStr(mPhysData(i,3)) = trm And CStr(mPhysData(i,4)) = yr Then" & vbCrLf
+    c = c & "      tmp.Cells(r,1).Value = ""Height(cm):"": tmp.Cells(r,2).Value = mPhysData(i,5)" & vbCrLf
+    c = c & "      tmp.Cells(r,3).Value = ""Weight(kg):"": tmp.Cells(r,4).Value = mPhysData(i,6)" & vbCrLf
+    c = c & "      tmp.Cells(r,5).Value = ""BMI:"": tmp.Cells(r,6).Value = mPhysData(i,7)" & vbCrLf
     c = c & "      tmp.Rows(r).RowHeight = 14: hasPh = True: r = r + 1: Exit For" & vbCrLf
     c = c & "    End If" & vbCrLf
     c = c & "  Next i" & vbCrLf
+    c = c & "  End If" & vbCrLf
     c = c & "  If Not hasPh Then tmp.Cells(r,1).Value = ""(No physical data)"": tmp.Cells(r,1).Font.Italic = True: tmp.Rows(r).RowHeight = 14: r = r + 1" & vbCrLf
     c = c & "  r = r + 1: Call SecHdr(tmp, r, "" 4. ATTENDANCE"", COLS)" & vbCrLf
-    c = c & "  Dim atW As Worksheet: Set atW = ThisWorkbook.Sheets(S_ATTEND)" & vbCrLf
     c = c & "  Dim aNo As Long, pNo As Long: aNo = 0: pNo = 0: r = r + 1" & vbCrLf
-    c = c & "  For i = 2 To atW.Cells(atW.Rows.Count,1).End(xlUp).Row" & vbCrLf
-    c = c & "    If CStr(atW.Cells(i,2).Value) = sID Then aNo = aNo + 1: If atW.Cells(i,4).Value = ""Present"" Then pNo = pNo + 1" & vbCrLf
+    c = c & "  If IsArray(mAttendData) Then" & vbCrLf
+    c = c & "  For i = 2 To UBound(mAttendData, 1)" & vbCrLf
+    c = c & "    If CStr(mAttendData(i,2)) = sID Then aNo = aNo + 1: If CStr(mAttendData(i,4)) = ""Present"" Then pNo = pNo + 1" & vbCrLf
     c = c & "  Next i" & vbCrLf
+    c = c & "  End If" & vbCrLf
     c = c & "  tmp.Cells(r,1).Value = ""Days Present:"": tmp.Cells(r,2).Value = pNo" & vbCrLf
     c = c & "  tmp.Cells(r,3).Value = ""Total Days:"": tmp.Cells(r,4).Value = aNo" & vbCrLf
     c = c & "  tmp.Cells(r,5).Value = ""Attendance %:""" & vbCrLf
@@ -4625,15 +5386,19 @@ Private Sub CreateModReportCards()
     c = c & "  tmp.Cells(r,1).Value = ""Next Term Opens: ____________  |  Closing Date: ____________""" & vbCrLf
     c = c & "  tmp.Cells(r,1).HorizontalAlignment = xlCenter: tmp.Cells(r,1).Font.Italic = True: tmp.Cells(r,1).Font.Size = 8: tmp.Rows(r).RowHeight = 14" & vbCrLf
     c = c & "  Call SetupA4Page(tmp, r)" & vbCrLf
-    c = c & "  Dim fPath As String: fPath = ThisWorkbook.Path & ""\Reports""" & vbCrLf
+    c = c & "  Dim fPath As String" & vbCrLf
+    c = c & "  If gPdfSaveDir <> """" Then fPath = gPdfSaveDir Else fPath = ThisWorkbook.Path & ""\Reports""" & vbCrLf
     c = c & "  On Error Resume Next: If Dir(fPath, vbDirectory) = """" Then MkDir fPath" & vbCrLf
     c = c & "  On Error GoTo RptErr" & vbCrLf
     c = c & "  Dim fName As String: fName = fPath & ""\"" & sAdm & ""_"" & Replace(sName, "" "", ""_"") & ""_"" & Replace(trm, "" "", """") & ""_"" & yr & "".pdf""" & vbCrLf
     c = c & "  tmp.ExportAsFixedFormat Type:=xlTypePDF, Filename:=fName, Quality:=xlQualityStandard" & vbCrLf
-    c = c & "  Call AddBackToDashboardButton(tmp)" & vbCrLf
-    c = c & "  Application.ScreenUpdating = True" & vbCrLf
-    c = c & "  MsgBox ""CBC Report Card saved:"" & vbLf & fName, vbInformation, ""Report Card Generated""" & vbCrLf
+    c = c & "  If gReportMode <> ""batch"" Then" & vbCrLf
+    c = c & "    Call AddBackToDashboardButton(tmp)" & vbCrLf
+    c = c & "    Application.ScreenUpdating = True" & vbCrLf
+    c = c & "    MsgBox ""CBC Report Card saved:"" & vbLf & fName, vbInformation, ""Report Card Generated""" & vbCrLf
+    c = c & "  End If" & vbCrLf
     c = c & "  Call AuditLog(""Report Card"", ""Generated: "" & sName & "" ("" & sAdm & "") "" & trm & "" "" & yr)" & vbCrLf
+    c = c & "  If gReportMode <> ""batch"" Then Call ClearReportCache" & vbCrLf
     c = c & "  Exit Sub" & vbCrLf
     c = c & "RptErr:" & vbCrLf
     c = c & "  Application.ScreenUpdating = True" & vbCrLf
@@ -4644,30 +5409,57 @@ Private Sub CreateModReportCards()
     c = c & "  gReportMode = ""batch""" & vbCrLf
     c = c & "  frmReportInput.Show vbModeless" & vbCrLf
     c = c & "End Sub" & vbCrLf
-    c = c & "Public Sub RunBatchReports(cls As String, trm As String, yr As String)" & vbCrLf
-    c = c & "  Dim sW As Worksheet: Set sW = ThisWorkbook.Sheets(S_STUD)" & vbCrLf
+    c = c & "Public Sub RunBatchReports(cls As String, trm As String, yr As String, Optional savePath As String = """")" & vbCrLf
+    c = c & "  Call CacheReportData" & vbCrLf
+    c = c & "  If Not IsArray(mStudData) Then MsgBox ""No student data found!"", vbCritical: Exit Sub" & vbCrLf
     c = c & "  Dim total As Long: total = 0: Dim i As Long" & vbCrLf
-    c = c & "  For i = 2 To sW.Cells(sW.Rows.Count,1).End(xlUp).Row" & vbCrLf
-    c = c & "    If CStr(sW.Cells(i,cCLS).Value) = cls And CStr(sW.Cells(i,cST).Value) = ""Active"" Then total = total + 1" & vbCrLf
+    c = c & "  Dim sLr As Long: sLr = UBound(mStudData, 1)" & vbCrLf
+    c = c & "  For i = 2 To sLr" & vbCrLf
+    c = c & "    If CStr(mStudData(i,cCLS)) = cls And CStr(mStudData(i,cST)) = ""Active"" Then total = total + 1" & vbCrLf
     c = c & "  Next i" & vbCrLf
-    c = c & "  If total = 0 Then MsgBox ""No active students in "" & cls, vbExclamation: Exit Sub" & vbCrLf
+    c = c & "  If total = 0 Then MsgBox ""No active students in "" & cls, vbExclamation: Call ClearReportCache: Exit Sub" & vbCrLf
+    c = c & "  ' --- Prepare save folder ---" & vbCrLf
+    c = c & "  Dim saveDir As String" & vbCrLf
+    c = c & "  If savePath <> """" Then" & vbCrLf
+    c = c & "    saveDir = savePath" & vbCrLf
+    c = c & "    On Error Resume Next: If Dir(saveDir, vbDirectory) = """" Then MkDir saveDir" & vbCrLf
+    c = c & "    On Error GoTo 0" & vbCrLf
+    c = c & "    gPdfSaveDir = saveDir" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  ' --- Suppress Excel overhead for batch ---" & vbCrLf
+    c = c & "  Dim oldCalc As Long: oldCalc = Application.Calculation" & vbCrLf
+    c = c & "  Application.Calculation = xlCalculationManual" & vbCrLf
+    c = c & "  Application.EnableEvents = False" & vbCrLf
+    c = c & "  Application.ScreenUpdating = False" & vbCrLf
+    c = c & "  Dim tStart As Double: tStart = Timer" & vbCrLf
     c = c & "  Dim okCnt As Long, errCnt As Long, cur As Long: okCnt = 0: errCnt = 0: cur = 0" & vbCrLf
-    c = c & "  For i = 2 To sW.Cells(sW.Rows.Count,1).End(xlUp).Row" & vbCrLf
-    c = c & "    If CStr(sW.Cells(i,cCLS).Value) = cls And CStr(sW.Cells(i,cST).Value) = ""Active"" Then" & vbCrLf
+    c = c & "  For i = 2 To sLr" & vbCrLf
+    c = c & "    If CStr(mStudData(i,cCLS)) = cls And CStr(mStudData(i,cST)) = ""Active"" Then" & vbCrLf
     c = c & "      cur = cur + 1" & vbCrLf
-    c = c & "      Application.StatusBar = ""Report "" & cur & ""/"" & total & "": "" & sW.Cells(i,cFN).Value & "" "" & sW.Cells(i,cLN).Value" & vbCrLf
+    c = c & "      Application.StatusBar = ""Report "" & cur & ""/"" & total & "" ("" & Int(Timer - tStart) & ""s): "" & CStr(mStudData(i,cFN)) & "" "" & CStr(mStudData(i,cLN))" & vbCrLf
     c = c & "      On Error Resume Next" & vbCrLf
-    c = c & "      Call GenerateCBCReport(CStr(sW.Cells(i,cSID).Value), trm, yr)" & vbCrLf
+    c = c & "      Call GenerateCBCReport(CStr(mStudData(i,cSID)), trm, yr)" & vbCrLf
     c = c & "      If Err.Number = 0 Then okCnt = okCnt + 1 Else errCnt = errCnt + 1: Err.Clear" & vbCrLf
     c = c & "      On Error GoTo 0" & vbCrLf
     c = c & "    End If" & vbCrLf
     c = c & "  Next i" & vbCrLf
+    c = c & "  Dim elapsed As Long: elapsed = Int(Timer - tStart)" & vbCrLf
+    c = c & "  ' --- Restore Excel state ---" & vbCrLf
+    c = c & "  Application.Calculation = oldCalc" & vbCrLf
+    c = c & "  Application.EnableEvents = True" & vbCrLf
+    c = c & "  Application.ScreenUpdating = True" & vbCrLf
+    c = c & "  Call AddBackToDashboardButton(ThisWorkbook.Sheets(S_TMP_RPT))" & vbCrLf
+    c = c & "  Call ClearReportCache" & vbCrLf
+    c = c & "  If savePath <> """" Then gPdfSaveDir = """"" & vbCrLf
     c = c & "  Application.StatusBar = False" & vbCrLf
     c = c & "  Dim msg As String" & vbCrLf
+    c = c & "  Dim actualDir As String: If savePath <> """" Then actualDir = saveDir Else actualDir = ThisWorkbook.Path & ""\Reports""" & vbCrLf
     c = c & "  msg = ChrW(10003) & "" Generated: "" & okCnt & ""  "" & IIf(errCnt > 0, ChrW(10007) & "" Failed: "" & errCnt, """")" & vbCrLf
-    c = c & "  msg = msg & vbLf & ""Saved to: "" & ThisWorkbook.Path & ""\Reports""" & vbCrLf
+    c = c & "  msg = msg & vbLf & ""Saved to: "" & actualDir" & vbCrLf
+    c = c & "  msg = msg & vbLf & ""Time: "" & elapsed & "" seconds""" & vbCrLf
     c = c & "  MsgBox msg, IIf(errCnt > 0, vbExclamation, vbInformation), ""Batch Complete""" & vbCrLf
-    c = c & "  Call AuditLog(""Report Card"", ""Batch: "" & okCnt & ""/"" & total & "" "" & cls & "" "" & trm & "" "" & yr)" & vbCrLf
+    c = c & "  If savePath <> """" Then Shell ""explorer.exe """""" & saveDir & """""", vbNormalFocus" & vbCrLf
+    c = c & "  Call AuditLog(""Report Card"", ""Batch: "" & okCnt & ""/"" & total & "" "" & cls & "" "" & trm & "" "" & yr & "" ("" & elapsed & ""s)"" & IIf(savePath <> """", "" | Saved to: "" & actualDir, """"))" & vbCrLf
     c = c & "End Sub" & vbCrLf
     ' ---- Legacy wrapper ----
     c = c & "Public Sub GeneratePDFReport(sID As String, trm As String, yr As String): Call GenerateCBCReport(sID, trm, yr): End Sub" & vbCrLf
@@ -6051,7 +6843,7 @@ Private Sub CreateModUserMgmt()
     c = c & "  frm.Controls(""txtFullName"").Value = fname" & vbCrLf
     c = c & "  frm.Controls(""cmbRole"").Value = rl" & vbCrLf
     c = c & "  frm.Controls(""cmbActive"").Value = CStr(ws.Cells(idx, 6).Value)" & vbCrLf
-    c = c & "  frm.Controls(""txtPassword"").Value = """""" & vbCrLf
+    c = c & "  frm.Controls(""txtPassword"").Value = """"" & vbCrLf
     c = c & "  ' --- Two-click confirmation ---" & vbCrLf
     c = c & "  If frm.Controls(""btnReset"").Tag <> ""confirm_"" & uname Then" & vbCrLf
     c = c & "    frm.Controls(""btnReset"").Tag = ""confirm_"" & uname" & vbCrLf
@@ -6062,7 +6854,7 @@ Private Sub CreateModUserMgmt()
     c = c & "    Exit Sub" & vbCrLf
     c = c & "  End If" & vbCrLf
     c = c & "  frm.Controls(""btnReset"").Caption = ""RESET PASSWORD"": frm.Controls(""btnReset"").BackColor = &H1565C0" & vbCrLf
-    c = c & "  frm.Controls(""btnReset"").Tag = """""" & vbCrLf
+    c = c & "  frm.Controls(""btnReset"").Tag = """"" & vbCrLf
     c = c & "  ' --- Generate strong temp password (10 chars, guaranteed complexity) ---" & vbCrLf
     c = c & "  Randomize Timer" & vbCrLf
     c = c & "  Dim tmpPw As String, j As Long" & vbCrLf
@@ -6390,68 +7182,98 @@ Private Sub CreateReportCenterForm()
 End Sub
 
 ' -----------------------------------------------------------
-'  FORM: frmReportInput – Professional Input for Reports
+'  FORM: frmReportInput – Professional Input for Reports + Save
 ' -----------------------------------------------------------
 Private Sub CreateReportInputForm()
-    Dim f As Object: Set f = AddForm("frmReportInput", "Report Card", 400, 310)
+    Dim f As Object: Set f = AddForm("frmReportInput", "Report Card", 420, 430)
     Dim d As Object: Set d = f.Designer
     f.Properties("BackColor") = &HFFFFFF
     
     ' === HEADER BAR ===
-    AL d, "lblHdr", "GENERATE REPORT CARD", 0, 0, 400, 32, 12
+    AL d, "lblHdr", "GENERATE REPORT CARD", 0, 0, 420, 34, 13
     d.Controls("lblHdr").Font.Bold = True: d.Controls("lblHdr").Font.Name = "Segoe UI"
     d.Controls("lblHdr").ForeColor = &HFFFFFF: d.Controls("lblHdr").BackColor = &H643C1F
     d.Controls("lblHdr").TextAlign = 2
-    AL d, "lblAcc", "", 0, 32, 400, 2
+    AL d, "lblAcc", "", 0, 34, 420, 3
     d.Controls("lblAcc").BackColor = &HD4A537: d.Controls("lblAcc").Caption = ""
     
     ' === INPUT ROW 1: Adm No (single) / Class (batch) ===
-    AL d, "lblAdm", "Admission No:", 25, 46, 110, 16, 9
+    AL d, "lblAdm", "Admission No:", 25, 48, 110, 16, 9
     d.Controls("lblAdm").Font.Bold = True: d.Controls("lblAdm").Font.Name = "Segoe UI"
-    AT d, "txtAdm", 135, 44, 220
+    AT d, "txtAdm", 140, 46, 240
     d.Controls("txtAdm").Font.Size = 10
     
-    AL d, "lblCls", "Select Class:", 25, 46, 110, 16, 9
+    AL d, "lblCls", "Select Class:", 25, 48, 110, 16, 9
     d.Controls("lblCls").Font.Bold = True: d.Controls("lblCls").Font.Name = "Segoe UI"
-    AC d, "cmbClass", 135, 44, 220
+    AC d, "cmbClass", 140, 46, 240
     
     ' === INPUT ROW 2: Term ===
-    AL d, "lblTrm", "Term:", 25, 72, 110, 16, 9
+    AL d, "lblTrm", "Term:", 25, 74, 110, 16, 9
     d.Controls("lblTrm").Font.Bold = True: d.Controls("lblTrm").Font.Name = "Segoe UI"
-    AC d, "cmbTerm", 135, 70, 220
+    AC d, "cmbTerm", 140, 72, 240
     
     ' === INPUT ROW 3: Year ===
-    AL d, "lblYr", "Year:", 25, 98, 110, 16, 9
+    AL d, "lblYr", "Year:", 25, 100, 110, 16, 9
     d.Controls("lblYr").Font.Bold = True: d.Controls("lblYr").Font.Name = "Segoe UI"
-    AC d, "cmbYear", 135, 96, 220
+    AC d, "cmbYear", 140, 98, 240
     
     ' === PREVIEW PANEL ===
-    AL d, "lblPrevHdr", "  PREVIEW", 25, 126, 350, 16, 8
+    AL d, "lblPrevHdr", "  PREVIEW", 25, 128, 370, 16, 8
     d.Controls("lblPrevHdr").Font.Bold = True: d.Controls("lblPrevHdr").Font.Name = "Segoe UI"
     d.Controls("lblPrevHdr").ForeColor = &HFFFFFF: d.Controls("lblPrevHdr").BackColor = &H5A3416
     
-    AL d, "lblPrev", "  Enter details and click Lookup.", 25, 142, 350, 60, 9
+    AL d, "lblPrev", "  Enter details and click Lookup.", 25, 144, 370, 60, 9
     d.Controls("lblPrev").Font.Name = "Segoe UI"
     d.Controls("lblPrev").BackColor = &HF5F0EB: d.Controls("lblPrev").ForeColor = &H555555
     d.Controls("lblPrev").BorderStyle = 1: d.Controls("lblPrev").BorderColor = &HE0D0C0
     d.Controls("lblPrev").WordWrap = True
     
+    ' === DIVIDER ===
+    AL d, "lblDiv1", "", 25, 210, 370, 1
+    d.Controls("lblDiv1").BackColor = &HD0D0D0: d.Controls("lblDiv1").Caption = ""
+    
+    ' === SAVE OPTIONS SECTION (batch mode only) ===
+    AL d, "lblSaveHdr", "  SAVE OPTIONS", 25, 218, 370, 20, 9
+    d.Controls("lblSaveHdr").Font.Bold = True: d.Controls("lblSaveHdr").Font.Name = "Segoe UI"
+    d.Controls("lblSaveHdr").ForeColor = &HFFFFFF: d.Controls("lblSaveHdr").BackColor = &H5A3416
+    
+    ' --- File Name ---
+    AL d, "lblFN", "File Name:", 25, 246, 65, 16, 9
+    d.Controls("lblFN").Font.Name = "Segoe UI": d.Controls("lblFN").ForeColor = &H777777
+    AT d, "txtFileName", 95, 244, 300
+    d.Controls("txtFileName").Font.Size = 9
+    
+    ' --- Save Location ---
+    AL d, "lblLoc", "Location:", 25, 272, 65, 16, 9
+    d.Controls("lblLoc").Font.Name = "Segoe UI": d.Controls("lblLoc").ForeColor = &H777777
+    AT d, "txtSavePath", 95, 270, 210
+    d.Controls("txtSavePath").Font.Size = 8
+    d.Controls("txtSavePath").Locked = True
+    AB d, "btnBrowseSave", ChrW(9654) & " BROWSE", 312, 268, 84, 22, &H5A3416, &HFFFFFF
+    d.Controls("btnBrowseSave").Font.Size = 8
+    
+    ' === DIVIDER ===
+    AL d, "lblDiv2", "", 25, 298, 370, 1
+    d.Controls("lblDiv2").BackColor = &HD0D0D0: d.Controls("lblDiv2").Caption = ""
+    
     ' === ACTION BUTTONS ===
-    AB d, "btnLookup", ChrW(9881) & " LOOKUP", 25, 214, 100, 28, &H1565C0, &HFFFFFF
+    AB d, "btnLookup", ChrW(9881) & " LOOKUP", 25, 310, 100, 30, &H1565C0, &HFFFFFF
     d.Controls("btnLookup").Font.Size = 9
     
-    AB d, "btnGenerate", ChrW(10003) & " GENERATE", 135, 214, 145, 28, &H2E7D32, &HFFFFFF
-    d.Controls("btnGenerate").Font.Size = 9: d.Controls("btnGenerate").Enabled = False
+    AB d, "btnGenerate", ChrW(10003) & " GENERATE", 135, 310, 160, 30, &H2E7D32, &HFFFFFF
+    d.Controls("btnGenerate").Font.Size = 10: d.Controls("btnGenerate").Font.Bold = True
+    d.Controls("btnGenerate").Enabled = False
     
-    AB d, "btnCancel", "CANCEL", 290, 214, 85, 28, &HC62828, &HFFFFFF
+    AB d, "btnCancel", "CANCEL", 310, 310, 85, 30, &HC62828, &HFFFFFF
     d.Controls("btnCancel").Font.Size = 9
     
     ' === STATUS ===
-    AL d, "lblStat", "", 25, 250, 350, 14, 8
+    AL d, "lblStat", "", 25, 350, 370, 14, 8
     d.Controls("lblStat").ForeColor = &H888888: d.Controls("lblStat").Font.Italic = True
     
-    AL d, "lblFoot", "PDFs exported to \Reports folder.", 25, 270, 350, 14, 7
+    AL d, "lblFoot", "PDFs exported to chosen folder.", 25, 370, 370, 14, 7
     d.Controls("lblFoot").ForeColor = &HAAAAAA: d.Controls("lblFoot").Font.Italic = True
+    d.Controls("lblFoot").Font.Name = "Segoe UI"
     
     ' --- Form Code ---
     Dim c$: c = "Option Explicit" & vbCrLf
@@ -6469,6 +7291,9 @@ Private Sub CreateReportInputForm()
     c = c & "    Me.Controls(""cmbYear"").AddItem CStr(y)" & vbCrLf
     c = c & "  Next y" & vbCrLf
     c = c & "  Me.Controls(""cmbYear"").Value = CStr(Year(Date))" & vbCrLf
+    c = c & "  ' --- Save defaults ---" & vbCrLf
+    c = c & "  Me.Controls(""txtFileName"").Value = ""ReportCards_"" & Format(Date, ""yyyymmdd"")" & vbCrLf
+    c = c & "  Me.Controls(""txtSavePath"").Value = ThisWorkbook.Path" & vbCrLf
     c = c & "  If gReportMode = ""batch"" Then" & vbCrLf
     c = c & "    Me.Caption = ""Batch Report Cards""" & vbCrLf
     c = c & "    Me.Controls(""lblHdr"").Caption = ""BATCH REPORT CARDS""" & vbCrLf
@@ -6482,6 +7307,15 @@ Private Sub CreateReportInputForm()
     c = c & "    Me.Controls(""btnGenerate"").Enabled = False" & vbCrLf
     c = c & "    Call PopulateClassDropdown(Me, ""cmbClass"")" & vbCrLf
     c = c & "    Me.Controls(""lblPrev"").Caption = ""  Select class, term and year above.""" & vbCrLf
+    c = c & "    ' --- Show save options ---" & vbCrLf
+    c = c & "    Me.Controls(""lblSaveHdr"").Visible = True" & vbCrLf
+    c = c & "    Me.Controls(""lblFN"").Visible = True" & vbCrLf
+    c = c & "    Me.Controls(""txtFileName"").Visible = True" & vbCrLf
+    c = c & "    Me.Controls(""lblLoc"").Visible = True" & vbCrLf
+    c = c & "    Me.Controls(""txtSavePath"").Visible = True" & vbCrLf
+    c = c & "    Me.Controls(""btnBrowseSave"").Visible = True" & vbCrLf
+    c = c & "    Me.Controls(""lblDiv1"").Visible = True" & vbCrLf
+    c = c & "    Me.Controls(""lblDiv2"").Visible = True" & vbCrLf
     c = c & "  Else" & vbCrLf
     c = c & "    Me.Caption = ""Single Report Card""" & vbCrLf
     c = c & "    Me.Controls(""lblHdr"").Caption = ""SINGLE REPORT CARD""" & vbCrLf
@@ -6492,6 +7326,15 @@ Private Sub CreateReportInputForm()
     c = c & "    Me.Controls(""btnLookup"").Visible = True" & vbCrLf
     c = c & "    Me.Controls(""btnGenerate"").Enabled = False" & vbCrLf
     c = c & "    Me.Controls(""lblPrev"").Caption = ""  Enter admission number and click Lookup.""" & vbCrLf
+    c = c & "    ' --- Hide save options in single mode ---" & vbCrLf
+    c = c & "    Me.Controls(""lblSaveHdr"").Visible = False" & vbCrLf
+    c = c & "    Me.Controls(""lblFN"").Visible = False" & vbCrLf
+    c = c & "    Me.Controls(""txtFileName"").Visible = False" & vbCrLf
+    c = c & "    Me.Controls(""lblLoc"").Visible = False" & vbCrLf
+    c = c & "    Me.Controls(""txtSavePath"").Visible = False" & vbCrLf
+    c = c & "    Me.Controls(""btnBrowseSave"").Visible = False" & vbCrLf
+    c = c & "    Me.Controls(""lblDiv1"").Visible = False" & vbCrLf
+    c = c & "    Me.Controls(""lblDiv2"").Visible = False" & vbCrLf
     c = c & "  End If" & vbCrLf
     c = c & "  Call CenterForm(Me)" & vbCrLf
     c = c & "End Sub" & vbCrLf
@@ -6509,12 +7352,19 @@ Private Sub CreateReportInputForm()
     c = c & "    Me.Controls(""lblPrevHdr"").BackColor = &H2E7D32" & vbCrLf
     c = c & "    Me.Controls(""btnGenerate"").Enabled = True" & vbCrLf
     c = c & "    Me.Controls(""lblStat"").Caption = ""Ready to generate "" & cnt & "" reports.""" & vbCrLf
+    c = c & "    Me.Controls(""txtFileName"").Value = ""ReportCards_"" & cls & ""_"" & Me.Controls(""cmbTerm"").Value & ""_"" & Me.Controls(""cmbYear"").Value" & vbCrLf
     c = c & "  Else" & vbCrLf
     c = c & "    Me.Controls(""lblPrev"").Caption = ""  No active students in "" & cls & "".""" & vbCrLf
     c = c & "    Me.Controls(""lblPrevHdr"").BackColor = &HC62828" & vbCrLf
     c = c & "    Me.Controls(""btnGenerate"").Enabled = False" & vbCrLf
     c = c & "    Me.Controls(""lblStat"").Caption = ""No students found.""" & vbCrLf
     c = c & "  End If" & vbCrLf
+    c = c & "End Sub" & vbCrLf
+    ' ---- Browse Save Location ----
+    c = c & "Private Sub btnBrowseSave_Click()" & vbCrLf
+    c = c & "  Dim fd As FileDialog: Set fd = Application.FileDialog(msoFileDialogFolderPicker)" & vbCrLf
+    c = c & "  fd.Title = ""Select Save Location for Report Cards""" & vbCrLf
+    c = c & "  If fd.Show = -1 Then Me.Controls(""txtSavePath"").Value = fd.SelectedItems(1)" & vbCrLf
     c = c & "End Sub" & vbCrLf
     ' ---- Lookup Button (single mode) ----
     c = c & "Private Sub btnLookup_Click()" & vbCrLf
@@ -6556,8 +7406,16 @@ Private Sub CreateReportInputForm()
     c = c & "  End If" & vbCrLf
     c = c & "  If gReportMode = ""batch"" Then" & vbCrLf
     c = c & "    Dim cls As String: cls = Me.Controls(""cmbClass"").Value" & vbCrLf
+    c = c & "    Dim savePath As String" & vbCrLf
+    c = c & "    Dim sp As String: sp = Trim(Me.Controls(""txtSavePath"").Value)" & vbCrLf
+    c = c & "    Dim fn As String: fn = Trim(Me.Controls(""txtFileName"").Value)" & vbCrLf
+    c = c & "    If sp <> """" And fn <> """" Then" & vbCrLf
+    c = c & "      savePath = sp & ""\"" & fn" & vbCrLf
+    c = c & "    Else" & vbCrLf
+    c = c & "      savePath = """"" & vbCrLf
+    c = c & "    End If" & vbCrLf
     c = c & "    Unload Me" & vbCrLf
-    c = c & "    Call RunBatchReports(cls, trm, yr)" & vbCrLf
+    c = c & "    Call RunBatchReports(cls, trm, yr, savePath)" & vbCrLf
     c = c & "  Else" & vbCrLf
     c = c & "    Dim localSID As String: localSID = mSID" & vbCrLf
     c = c & "    Unload Me" & vbCrLf
@@ -6768,57 +7626,97 @@ Private Sub CreateChangePasswordForm()
 End Sub
 
 ' -----------------------------------------------------------
-'  FORM: frmClassListInput – Professional Class Selection
+'  FORM: frmClassListInput – Professional Class Selection + Save
 ' -----------------------------------------------------------
 Private Sub CreateClassListInputForm()
-    Dim f As Object: Set f = AddForm("frmClassListInput", "Class List Report", 380, 245)
+    Dim f As Object: Set f = AddForm("frmClassListInput", "Class List Report", 420, 400)
     Dim d As Object: Set d = f.Designer
     f.Properties("BackColor") = &HFFFFFF
     
     ' === HEADER BAR ===
-    AL d, "lblHdr", "CLASS LIST REPORT", 0, 0, 380, 32, 12
+    AL d, "lblHdr", "CLASS LIST REPORT", 0, 0, 420, 34, 13
     d.Controls("lblHdr").Font.Bold = True: d.Controls("lblHdr").Font.Name = "Segoe UI"
     d.Controls("lblHdr").ForeColor = &HFFFFFF: d.Controls("lblHdr").BackColor = &H1F4E79
     d.Controls("lblHdr").TextAlign = 2
-    AL d, "lblAcc", "", 0, 32, 380, 2
+    AL d, "lblAcc", "", 0, 34, 420, 3
     d.Controls("lblAcc").BackColor = &H388E3C: d.Controls("lblAcc").Caption = ""
     
-    ' === INFO ===
-    AL d, "lblInfo", "  Select a class to generate the student list report.", 20, 42, 340, 20, 9
+    ' === SUBTITLE ===
+    AL d, "lblInfo", "  Select a class to generate the student list report.", 20, 44, 380, 20, 9
     d.Controls("lblInfo").Font.Name = "Segoe UI": d.Controls("lblInfo").ForeColor = &H555555
     d.Controls("lblInfo").BackColor = &HE8F5E9: d.Controls("lblInfo").BorderStyle = 1
     
-    ' === Class Selection ===
-    AL d, "lblCls", "Class:", 20, 72, 60, 16, 9
+    ' === CLASS / STREAM SELECTION ===
+    AL d, "lblCls", "Class:", 20, 76, 50, 16, 9
     d.Controls("lblCls").Font.Bold = True: d.Controls("lblCls").Font.Name = "Segoe UI"
-    AC d, "cmbClass", 90, 70, 100
+    AC d, "cmbClass", 75, 74, 110
     d.Controls("cmbClass").Font.Size = 10
     
-    ' === Stream Filter (optional) ===
-    AL d, "lblStrm", "Stream:", 200, 72, 60, 16, 9
+    AL d, "lblStrm", "Stream:", 210, 76, 50, 16, 9
     d.Controls("lblStrm").Font.Bold = True: d.Controls("lblStrm").Font.Name = "Segoe UI"
-    AC d, "cmbStream", 260, 70, 100
+    AC d, "cmbStream", 265, 74, 130
     d.Controls("cmbStream").Font.Size = 10
     
     ' === Student count preview ===
-    AL d, "lblPreview", "", 20, 96, 340, 16, 9
+    AL d, "lblPreview", "", 20, 100, 380, 16, 9
     d.Controls("lblPreview").Font.Name = "Segoe UI": d.Controls("lblPreview").ForeColor = &H1565C0
     d.Controls("lblPreview").Font.Italic = True
     
-    ' === Buttons ===
-    AB d, "btnGenerate", ChrW(9776) & " GENERATE REPORT", 20, 122, 200, 30, &H1F4E79, &HFFFFFF
-    d.Controls("btnGenerate").Font.Size = 9
-    AB d, "btnCancel", "CANCEL", 240, 122, 120, 30, &H757575, &HFFFFFF
-    d.Controls("btnCancel").Font.Size = 9
+    ' === DIVIDER ===
+    AL d, "lblDiv1", "", 20, 122, 380, 1
+    d.Controls("lblDiv1").BackColor = &HD0D0D0: d.Controls("lblDiv1").Caption = ""
     
-    ' === Status ===
-    AL d, "lblStat", "  Select a class from the dropdown above.", 20, 162, 340, 20, 9
+    ' === SAVE OPTIONS SECTION ===
+    AL d, "lblSaveHdr", "  SAVE OPTIONS", 20, 130, 380, 20, 9
+    d.Controls("lblSaveHdr").Font.Bold = True: d.Controls("lblSaveHdr").Font.Name = "Segoe UI"
+    d.Controls("lblSaveHdr").ForeColor = &HFFFFFF: d.Controls("lblSaveHdr").BackColor = &H5A3416
+    
+    ' --- Save Checkbox ---
+    Dim chk As Object: Set chk = d.Controls.Add("Forms.CheckBox.1", "chkSave")
+    chk.Left = 20: chk.Top = 158: chk.Width = 180: chk.Height = 18
+    chk.Caption = " Save report to file": chk.Font.Size = 9
+    chk.Font.Name = "Segoe UI": chk.Value = False
+    
+    ' --- Format ---
+    AL d, "lblFmt", "Format:", 210, 160, 45, 16, 9
+    d.Controls("lblFmt").Font.Name = "Segoe UI": d.Controls("lblFmt").ForeColor = &H777777
+    AC d, "cmbFormat", 260, 158, 135
+    d.Controls("cmbFormat").Font.Size = 9: d.Controls("cmbFormat").Enabled = False
+    
+    ' --- File Name ---
+    AL d, "lblFN", "File Name:", 20, 186, 65, 16, 9
+    d.Controls("lblFN").Font.Name = "Segoe UI": d.Controls("lblFN").ForeColor = &H777777
+    AT d, "txtFileName", 90, 184, 305
+    d.Controls("txtFileName").Font.Size = 9: d.Controls("txtFileName").Enabled = False
+    
+    ' --- Save Location ---
+    AL d, "lblLoc", "Location:", 20, 214, 65, 16, 9
+    d.Controls("lblLoc").Font.Name = "Segoe UI": d.Controls("lblLoc").ForeColor = &H777777
+    AT d, "txtSavePath", 90, 212, 215
+    d.Controls("txtSavePath").Font.Size = 8: d.Controls("txtSavePath").Enabled = False
+    d.Controls("txtSavePath").Locked = True
+    AB d, "btnBrowseSave", ChrW(9654) & " BROWSE", 312, 210, 84, 22, &H5A3416, &HFFFFFF
+    d.Controls("btnBrowseSave").Font.Size = 8: d.Controls("btnBrowseSave").Enabled = False
+    
+    ' === DIVIDER ===
+    AL d, "lblDiv2", "", 20, 242, 380, 1
+    d.Controls("lblDiv2").BackColor = &HD0D0D0: d.Controls("lblDiv2").Caption = ""
+    
+    ' === ACTION BUTTONS ===
+    AB d, "btnGenerate", ChrW(9776) & " GENERATE REPORT", 20, 254, 190, 32, &H1F4E79, &HFFFFFF
+    d.Controls("btnGenerate").Font.Size = 10: d.Controls("btnGenerate").Font.Bold = True
+    AB d, "btnCancel", "CANCEL", 230, 254, 165, 32, &H757575, &HFFFFFF
+    d.Controls("btnCancel").Font.Size = 10
+    
+    ' === STATUS BAR ===
+    AL d, "lblStat", "  Select a class from the dropdown above.", 20, 298, 380, 22, 9
     d.Controls("lblStat").Font.Name = "Segoe UI": d.Controls("lblStat").ForeColor = &H888888
     d.Controls("lblStat").BackColor = &HF5F5F5: d.Controls("lblStat").BorderStyle = 1
     
-    ' === Footer ===
-    AL d, "lblFoot", "Report will open as a new sheet. You can print from there.", 20, 192, 340, 14, 7
+    ' === FOOTER ===
+    AL d, "lblFoot", "Report will open as a new sheet. You can also save it to file.", 20, 330, 380, 14, 7
     d.Controls("lblFoot").ForeColor = &HAAAAAA: d.Controls("lblFoot").Font.Italic = True
+    d.Controls("lblFoot").Font.Name = "Segoe UI"
     
     ' --- Form Code ---
     Dim c$: c = "Option Explicit" & vbCrLf
@@ -6841,6 +7739,12 @@ Private Sub CreateClassListInputForm()
     c = c & "    If Not found And sn <> """" Then Me.Controls(""cmbStream"").AddItem sn" & vbCrLf
     c = c & "  Next i" & vbCrLf
     c = c & "  Me.Controls(""cmbStream"").Value = ""All""" & vbCrLf
+    c = c & "  ' --- Save defaults ---" & vbCrLf
+    c = c & "  Me.Controls(""cmbFormat"").AddItem ""PDF""" & vbCrLf
+    c = c & "  Me.Controls(""cmbFormat"").AddItem ""Excel (.xlsx)""" & vbCrLf
+    c = c & "  Me.Controls(""cmbFormat"").Value = ""PDF""" & vbCrLf
+    c = c & "  Me.Controls(""txtFileName"").Value = ""ClassList_"" & Format(Date, ""yyyymmdd"")" & vbCrLf
+    c = c & "  Me.Controls(""txtSavePath"").Value = ThisWorkbook.Path" & vbCrLf
     c = c & "  Call CenterForm(Me)" & vbCrLf
     c = c & "End Sub" & vbCrLf
     c = c & "Private Sub cmbClass_Change()" & vbCrLf
@@ -6852,8 +7756,20 @@ Private Sub CreateClassListInputForm()
     c = c & "    If CStr(ws.Cells(i, cCLS).Value) = Me.Controls(""cmbClass"").Value Then cnt = cnt + 1" & vbCrLf
     c = c & "  Next i" & vbCrLf
     c = c & "  Me.Controls(""lblPreview"").Caption = ChrW(9679) & "" "" & cnt & "" students found in "" & Me.Controls(""cmbClass"").Value" & vbCrLf
+    c = c & "  Me.Controls(""txtFileName"").Value = ""ClassList_"" & Me.Controls(""cmbClass"").Value & ""_"" & Format(Date, ""yyyymmdd"")" & vbCrLf
     c = c & "  Me.Controls(""lblStat"").Caption = ""  Ready to generate. Click Generate Report.""" & vbCrLf
     c = c & "  Me.Controls(""lblStat"").ForeColor = &H2E7D32" & vbCrLf
+    c = c & "End Sub" & vbCrLf
+    c = c & "Private Sub chkSave_Click()" & vbCrLf
+    c = c & "  Dim en As Boolean: en = Me.Controls(""chkSave"").Value" & vbCrLf
+    c = c & "  Me.Controls(""cmbFormat"").Enabled = en" & vbCrLf
+    c = c & "  Me.Controls(""txtFileName"").Enabled = en" & vbCrLf
+    c = c & "  Me.Controls(""btnBrowseSave"").Enabled = en" & vbCrLf
+    c = c & "End Sub" & vbCrLf
+    c = c & "Private Sub btnBrowseSave_Click()" & vbCrLf
+    c = c & "  Dim fd As FileDialog: Set fd = Application.FileDialog(msoFileDialogFolderPicker)" & vbCrLf
+    c = c & "  fd.Title = ""Select Save Location""" & vbCrLf
+    c = c & "  If fd.Show = -1 Then Me.Controls(""txtSavePath"").Value = fd.SelectedItems(1)" & vbCrLf
     c = c & "End Sub" & vbCrLf
     c = c & "Private Sub btnGenerate_Click()" & vbCrLf
     c = c & "  Dim cls As String: cls = Me.Controls(""cmbClass"").Value" & vbCrLf
@@ -6861,8 +7777,26 @@ Private Sub CreateClassListInputForm()
     c = c & "    Me.Controls(""lblStat"").Caption = ChrW(10007) & ""  Please select a class first.""" & vbCrLf
     c = c & "    Me.Controls(""lblStat"").ForeColor = &HC62828: Exit Sub" & vbCrLf
     c = c & "  End If" & vbCrLf
+    c = c & "  Dim savePath As String: savePath = """"" & vbCrLf
+    c = c & "  Dim saveFormat As String: saveFormat = """"" & vbCrLf
+    c = c & "  If Me.Controls(""chkSave"").Value Then" & vbCrLf
+    c = c & "    Dim fn As String: fn = Trim(Me.Controls(""txtFileName"").Value)" & vbCrLf
+    c = c & "    If fn = """" Then" & vbCrLf
+    c = c & "      Me.Controls(""lblStat"").Caption = ChrW(10007) & ""  Please enter a file name.""" & vbCrLf
+    c = c & "      Me.Controls(""lblStat"").ForeColor = &HC62828: Exit Sub" & vbCrLf
+    c = c & "    End If" & vbCrLf
+    c = c & "    Dim sp As String: sp = Trim(Me.Controls(""txtSavePath"").Value)" & vbCrLf
+    c = c & "    If sp = """" Then" & vbCrLf
+    c = c & "      Me.Controls(""lblStat"").Caption = ChrW(10007) & ""  Please select a save location.""" & vbCrLf
+    c = c & "      Me.Controls(""lblStat"").ForeColor = &HC62828: Exit Sub" & vbCrLf
+    c = c & "    End If" & vbCrLf
+    c = c & "    saveFormat = Me.Controls(""cmbFormat"").Value" & vbCrLf
+    c = c & "    Dim ext As String" & vbCrLf
+    c = c & "    If saveFormat = ""PDF"" Then ext = "".pdf"" Else ext = "".xlsx""" & vbCrLf
+    c = c & "    savePath = sp & ""\"" & fn & ext" & vbCrLf
+    c = c & "  End If" & vbCrLf
     c = c & "  Unload Me" & vbCrLf
-    c = c & "  Call GenerateClassListReport(cls)" & vbCrLf
+    c = c & "  Call GenerateClassListReport(cls, savePath, saveFormat)" & vbCrLf
     c = c & "End Sub" & vbCrLf
     c = c & "Private Sub btnCancel_Click(): Unload Me: End Sub" & vbCrLf
     f.CodeModule.AddFromString c
@@ -7119,7 +8053,7 @@ End Sub
 '  FORM: frmBackup – Professional Backup Manager
 ' -----------------------------------------------------------
 Private Sub CreateBackupForm()
-    Dim f As Object: Set f = AddForm("frmBackup", "Backup Manager", 560, 470)
+    Dim f As Object: Set f = AddForm("frmBackup", "Backup Manager", 560, 540)
     Dim d As Object: Set d = f.Designer
     f.Properties("BackColor") = &HFFFFFF
     
@@ -7168,25 +8102,39 @@ Private Sub CreateBackupForm()
     lst.Font.Size = 9: lst.Font.Name = "Consolas"
     lst.ColumnCount = 3: lst.ColumnWidths = "280;60;170"
     
-    ' === ACTION BUTTONS ===
-    AB d, "btnRestore", ChrW(8635) & " RESTORE", 20, 362, 120, 32, &H1565C0, &HFFFFFF
+    ' === ACTION BUTTONS (Row 1) ===
+    AB d, "btnRestore", ChrW(8635) & " RESTORE", 20, 362, 120, 30, &H1565C0, &HFFFFFF
     d.Controls("btnRestore").Font.Size = 9
-    AB d, "btnDelete", ChrW(10007) & " DELETE", 150, 362, 100, 32, &HC62828, &HFFFFFF
+    AB d, "btnDelete", ChrW(10007) & " DELETE", 150, 362, 100, 30, &HC62828, &HFFFFFF
     d.Controls("btnDelete").Font.Size = 9
-    AB d, "btnRefresh", ChrW(8635) & " REFRESH", 260, 362, 100, 32, &H757575, &HFFFFFF
+    AB d, "btnRefresh", ChrW(8635) & " REFRESH", 260, 362, 100, 30, &H757575, &HFFFFFF
     d.Controls("btnRefresh").Font.Size = 9
-    AB d, "btnOpen", "OPEN FOLDER", 370, 362, 100, 32, &HFF6F00, &HFFFFFF
+    AB d, "btnOpen", "OPEN FOLDER", 370, 362, 100, 30, &HFF6F00, &HFFFFFF
     d.Controls("btnOpen").Font.Size = 9
-    AB d, "btnClose", "CLOSE", 480, 362, 60, 32, &H37474F, &HFFFFFF
+    AB d, "btnClose", "CLOSE", 480, 362, 60, 30, &H37474F, &HFFFFFF
     d.Controls("btnClose").Font.Size = 9
     
+    ' === ADVANCED TOOLS (Row 2) ===
+    AL d, "lblAdv", "  ADVANCED TOOLS", 20, 398, 520, 18, 9
+    d.Controls("lblAdv").Font.Bold = True: d.Controls("lblAdv").ForeColor = &HFFFFFF
+    d.Controls("lblAdv").BackColor = &H37474F
+    
+    AB d, "btnSummary", ChrW(9733) & " DATA SUMMARY", 20, 420, 130, 28, &H00695C, &HFFFFFF
+    d.Controls("btnSummary").Font.Size = 8
+    AB d, "btnExport", ChrW(8681) & " EXPORT CSV", 160, 420, 120, 28, &H4527A0, &HFFFFFF
+    d.Controls("btnExport").Font.Size = 8
+    AB d, "btnVerify", ChrW(9888) & " VERIFY BACKUP", 290, 420, 130, 28, &HE65100, &HFFFFFF
+    d.Controls("btnVerify").Font.Size = 8
+    AB d, "btnSchedule", ChrW(9200) & " AUTO-BACKUP", 430, 420, 110, 28, &H1B5E20, &HFFFFFF
+    d.Controls("btnSchedule").Font.Size = 8
+    
     ' === SUMMARY BAR ===
-    AL d, "lblInfo", "  0 backups  |  0 KB total", 20, 404, 520, 18, 8
+    AL d, "lblInfo", "  0 backups  |  0 KB total", 20, 456, 520, 18, 8
     d.Controls("lblInfo").BackColor = &HF5F5F5: d.Controls("lblInfo").ForeColor = &H666666
     d.Controls("lblInfo").BorderStyle = 1: d.Controls("lblInfo").Font.Name = "Segoe UI"
     
     ' === STATUS BAR ===
-    AL d, "lblStat", "  Ready.", 20, 426, 520, 20, 9
+    AL d, "lblStat", "  Ready.", 20, 478, 520, 20, 9
     d.Controls("lblStat").BackColor = &HF5F5F5: d.Controls("lblStat").ForeColor = &H666666
     d.Controls("lblStat").BorderStyle = 1: d.Controls("lblStat").Font.Name = "Segoe UI"
     
@@ -7360,6 +8308,37 @@ Private Sub CreateBackupForm()
     c = c & "Private Sub btnClose_Click(): Call UnhookMouseWheel: Unload Me: End Sub" & vbCrLf
     c = c & "Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer): Call UnhookMouseWheel: End Sub" & vbCrLf
     c = c & "Private Sub lstBackups_MouseMove(ByVal Button As Integer, ByVal Shift As Integer, ByVal X As Single, ByVal Y As Single): Call HookMouseWheelList(Me.Controls(""lstBackups"")): End Sub" & vbCrLf
+    
+    ' --- DATA SUMMARY ---
+    c = c & "Private Sub btnSummary_Click(): Call DataSummary: End Sub" & vbCrLf
+    
+    ' --- EXPORT CSV ---
+    c = c & "Private Sub btnExport_Click()" & vbCrLf
+    c = c & "  Me.Controls(""lblStat"").Caption = ""  Exporting all data to CSV...""" & vbCrLf
+    c = c & "  Me.Controls(""lblStat"").ForeColor = &H1565C0: Me.Repaint" & vbCrLf
+    c = c & "  Call ExportAllDataToCSV" & vbCrLf
+    c = c & "  Me.Controls(""lblStat"").Caption = ""  "" & ChrW(10003) & "" CSV export complete!""" & vbCrLf
+    c = c & "  Me.Controls(""lblStat"").ForeColor = &H2E7D32" & vbCrLf
+    c = c & "End Sub" & vbCrLf
+    
+    ' --- VERIFY BACKUP ---
+    c = c & "Private Sub btnVerify_Click()" & vbCrLf
+    c = c & "  Me.Controls(""lblStat"").Caption = ""  Verifying backup...""" & vbCrLf
+    c = c & "  Me.Controls(""lblStat"").ForeColor = &H1565C0: Me.Repaint" & vbCrLf
+    c = c & "  Call VerifyBackup" & vbCrLf
+    c = c & "  Me.Controls(""lblStat"").Caption = ""  "" & ChrW(10003) & "" Verification complete.""" & vbCrLf
+    c = c & "  Me.Controls(""lblStat"").ForeColor = &H2E7D32" & vbCrLf
+    c = c & "End Sub" & vbCrLf
+    
+    ' --- AUTO-BACKUP (manual trigger) ---
+    c = c & "Private Sub btnSchedule_Click()" & vbCrLf
+    c = c & "  Me.Controls(""lblStat"").Caption = ""  Running scheduled backup...""" & vbCrLf
+    c = c & "  Me.Controls(""lblStat"").ForeColor = &H1565C0: Me.Repaint" & vbCrLf
+    c = c & "  Call ScheduledBackup" & vbCrLf
+    c = c & "  Call RefreshList" & vbCrLf
+    c = c & "  Me.Controls(""lblStat"").Caption = ""  "" & ChrW(10003) & "" Auto-backup check complete.""" & vbCrLf
+    c = c & "  Me.Controls(""lblStat"").ForeColor = &H2E7D32" & vbCrLf
+    c = c & "End Sub" & vbCrLf
     
     f.CodeModule.AddFromString c
 End Sub
@@ -8165,3 +9144,386 @@ Private Sub CreateImportRollForm()
     c = c & "Private Sub btnCancel_Click(): Unload Me: End Sub" & vbCrLf
     f.CodeModule.AddFromString c
 End Sub
+
+' =============================================================
+'  MODULE: modDatabase  (Database Browser backend)
+' =============================================================
+Private Sub CreateModDatabase()
+    Dim m As Object: Set m = AddMod("modDatabase")
+    Dim c$: c = "Option Explicit" & vbCrLf
+    
+    ' --- Module-level cache ---
+    c = c & "Private mData()   As Variant" & vbCrLf
+    c = c & "Private mHeaders() As String" & vbCrLf
+    c = c & "Private mColCount As Long" & vbCrLf
+    c = c & "Private mRowCount As Long" & vbCrLf
+    c = c & "Private mFilterIdx() As Long" & vbCrLf
+    c = c & "Private mFilterCount As Long" & vbCrLf
+    c = c & "Private mTableName As String" & vbCrLf & vbCrLf
+    
+    ' =============================
+    '  InitDbForm
+    ' =============================
+    c = c & "Public Sub InitDbForm(frm As Object)" & vbCrLf
+    c = c & "  On Error Resume Next" & vbCrLf
+    c = c & "  Dim ws As Worksheet" & vbCrLf
+    c = c & "  Dim fra As Object" & vbCrLf
+    c = c & "  Set fra = frm.Controls(""fraData"")" & vbCrLf
+    c = c & "  frm.Controls(""lstTables"").Clear" & vbCrLf
+    c = c & "  For Each ws In ThisWorkbook.Sheets" & vbCrLf
+    c = c & "    If Left(ws.Name, 3) = ""DB_"" Or ws.Name = ""Setup_Grades"" Or ws.Name = ""DB_Promotions"" Then" & vbCrLf
+    c = c & "      frm.Controls(""lstTables"").AddItem ws.Name" & vbCrLf
+    c = c & "    End If" & vbCrLf
+    c = c & "  Next ws" & vbCrLf
+    c = c & "  mTableName = """"" & vbCrLf
+    c = c & "  mColCount = 0" & vbCrLf
+    c = c & "  mRowCount = 0" & vbCrLf
+    c = c & "  mFilterCount = 0" & vbCrLf
+    c = c & "  fra.Controls(""lstHeaders"").Clear" & vbCrLf
+    c = c & "  fra.Controls(""lstData"").Clear" & vbCrLf
+    c = c & "  fra.ScrollLeft = 0" & vbCrLf
+    c = c & "  fra.ScrollWidth = fra.Width" & vbCrLf
+    c = c & "  frm.Controls(""lblSt"").Caption = ""  Ready - select a table.""" & vbCrLf
+    c = c & "  On Error GoTo 0" & vbCrLf
+    c = c & "End Sub" & vbCrLf & vbCrLf
+    
+    ' =============================
+    '  FilterTableList
+    ' =============================
+    c = c & "Public Sub FilterTableList(frm As Object)" & vbCrLf
+    c = c & "  On Error Resume Next" & vbCrLf
+    c = c & "  Dim srch As String" & vbCrLf
+    c = c & "  Dim ws As Worksheet" & vbCrLf
+    c = c & "  srch = Trim(frm.Controls(""txtTblSearch"").Value)" & vbCrLf
+    c = c & "  If srch = ""Filter tables..."" Then srch = """"" & vbCrLf
+    c = c & "  frm.Controls(""lstTables"").Clear" & vbCrLf
+    c = c & "  For Each ws In ThisWorkbook.Sheets" & vbCrLf
+    c = c & "    If Left(ws.Name, 3) = ""DB_"" Or ws.Name = ""Setup_Grades"" Or ws.Name = ""DB_Promotions"" Then" & vbCrLf
+    c = c & "      If srch = """" Then" & vbCrLf
+    c = c & "        frm.Controls(""lstTables"").AddItem ws.Name" & vbCrLf
+    c = c & "      ElseIf InStr(1, ws.Name, srch, vbTextCompare) > 0 Then" & vbCrLf
+    c = c & "        frm.Controls(""lstTables"").AddItem ws.Name" & vbCrLf
+    c = c & "      End If" & vbCrLf
+    c = c & "    End If" & vbCrLf
+    c = c & "  Next ws" & vbCrLf
+    c = c & "  On Error GoTo 0" & vbCrLf
+    c = c & "End Sub" & vbCrLf & vbCrLf
+    
+    ' =============================
+    '  LoadTable  (cell-by-cell for reliability)
+    ' =============================
+    c = c & "Public Sub LoadTable(frm As Object)" & vbCrLf
+    c = c & "  On Error GoTo LdErr" & vbCrLf
+    c = c & "  Dim ws As Worksheet" & vbCrLf
+    c = c & "  Dim lr As Long" & vbCrLf
+    c = c & "  Dim lc As Long" & vbCrLf
+    c = c & "  Dim cc As Long" & vbCrLf
+    c = c & "  Dim clr As Long" & vbCrLf
+    c = c & "  Dim i As Long" & vbCrLf
+    c = c & "  Dim j As Long" & vbCrLf
+    c = c & "  Dim dr As Long" & vbCrLf
+    c = c & "  Dim cw As String" & vbCrLf
+    c = c & "  Dim colW As Long" & vbCrLf
+    c = c & "  Dim totalW As Long" & vbCrLf
+    c = c & "  Dim fraW As Long" & vbCrLf
+    c = c & "  Dim hdrText As String" & vbCrLf
+    c = c & "  Dim v As Variant" & vbCrLf
+    c = c & "  Dim fra As Object" & vbCrLf
+    c = c & "  Dim lst As Object" & vbCrLf
+    c = c & "  Dim lstH As Object" & vbCrLf
+    c = c & "  If frm.Controls(""lstTables"").ListIndex < 0 Then Exit Sub" & vbCrLf
+    c = c & "  mTableName = frm.Controls(""lstTables"").Value" & vbCrLf
+    c = c & "  If Len(Trim(mTableName)) = 0 Then Exit Sub" & vbCrLf
+    c = c & "  frm.Controls(""lblSt"").Caption = ""  Loading "" & mTableName & ""...""" & vbCrLf
+    c = c & "  DoEvents" & vbCrLf
+    c = c & "  Set ws = ThisWorkbook.Sheets(mTableName)" & vbCrLf
+    c = c & "  lc = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column" & vbCrLf
+    c = c & "  If lc < 1 Then lc = 1" & vbCrLf
+    c = c & "  If lc > 17 Then lc = 17" & vbCrLf
+    c = c & "  lr = 1" & vbCrLf
+    c = c & "  For cc = 1 To lc" & vbCrLf
+    c = c & "    clr = ws.Cells(ws.Rows.Count, cc).End(xlUp).Row" & vbCrLf
+    c = c & "    If clr > lr Then lr = clr" & vbCrLf
+    c = c & "  Next cc" & vbCrLf
+    c = c & "  mColCount = lc" & vbCrLf
+    c = c & "  ReDim mHeaders(1 To lc)" & vbCrLf
+    c = c & "  For j = 1 To lc" & vbCrLf
+    c = c & "    mHeaders(j) = CStr(ws.Cells(1, j).Value)" & vbCrLf
+    c = c & "  Next j" & vbCrLf
+    c = c & "  Set fra = frm.Controls(""fraData"")" & vbCrLf
+    c = c & "  Set lst = fra.Controls(""lstData"")" & vbCrLf
+    c = c & "  Set lstH = fra.Controls(""lstHeaders"")" & vbCrLf
+    c = c & "  fraW = CLng(fra.Width)" & vbCrLf
+    c = c & "  colW = 110" & vbCrLf
+    c = c & "  totalW = colW * lc" & vbCrLf
+    c = c & "  If totalW < fraW Then totalW = fraW" & vbCrLf
+    c = c & "  cw = """"" & vbCrLf
+    c = c & "  For j = 1 To lc" & vbCrLf
+    c = c & "    If j > 1 Then cw = cw & "";"" " & vbCrLf
+    c = c & "    cw = cw & colW" & vbCrLf
+    c = c & "  Next j" & vbCrLf
+    c = c & "  On Error Resume Next" & vbCrLf
+    c = c & "  lstH.Clear" & vbCrLf
+    c = c & "  lstH.ColumnCount = lc" & vbCrLf
+    c = c & "  lstH.Width = totalW" & vbCrLf
+    c = c & "  lstH.ColumnWidths = cw" & vbCrLf
+    c = c & "  lstH.AddItem mHeaders(1)" & vbCrLf
+    c = c & "  For j = 2 To lc" & vbCrLf
+    c = c & "    lstH.List(0, j - 1) = mHeaders(j)" & vbCrLf
+    c = c & "  Next j" & vbCrLf
+    c = c & "  lst.Clear" & vbCrLf
+    c = c & "  lst.ColumnCount = lc" & vbCrLf
+    c = c & "  lst.Width = totalW" & vbCrLf
+    c = c & "  fra.ScrollLeft = 0" & vbCrLf
+    c = c & "  fra.ScrollWidth = totalW" & vbCrLf
+    c = c & "  lst.ColumnWidths = cw" & vbCrLf
+    c = c & "  On Error GoTo LdErr" & vbCrLf
+    c = c & "  dr = lr - 1" & vbCrLf
+    c = c & "  If dr < 0 Then dr = 0" & vbCrLf
+    c = c & "  mRowCount = dr" & vbCrLf
+    c = c & "  If dr > 0 Then" & vbCrLf
+    c = c & "    ReDim mData(1 To dr, 1 To lc)" & vbCrLf
+    c = c & "    For i = 1 To dr" & vbCrLf
+    c = c & "      For j = 1 To lc" & vbCrLf
+    c = c & "        v = ws.Cells(i + 1, j).Value" & vbCrLf
+    c = c & "        If IsError(v) Then" & vbCrLf
+    c = c & "          mData(i, j) = ""#ERR""" & vbCrLf
+    c = c & "        ElseIf IsNull(v) Or IsEmpty(v) Then" & vbCrLf
+    c = c & "          mData(i, j) = """"" & vbCrLf
+    c = c & "        Else" & vbCrLf
+    c = c & "          mData(i, j) = CStr(v)" & vbCrLf
+    c = c & "        End If" & vbCrLf
+    c = c & "      Next j" & vbCrLf
+    c = c & "    Next i" & vbCrLf
+    c = c & "    ReDim mFilterIdx(1 To dr)" & vbCrLf
+    c = c & "    mFilterCount = dr" & vbCrLf
+    c = c & "    For i = 1 To dr" & vbCrLf
+    c = c & "      mFilterIdx(i) = i" & vbCrLf
+    c = c & "    Next i" & vbCrLf
+    c = c & "  Else" & vbCrLf
+    c = c & "    Erase mData" & vbCrLf
+    c = c & "    ReDim mFilterIdx(1 To 1)" & vbCrLf
+    c = c & "    mFilterCount = 0" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  frm.txtSearch.Value = """"" & vbCrLf
+    c = c & "  frm.CurPage = 1" & vbCrLf
+    c = c & "  Call RenderPage(frm)" & vbCrLf
+    c = c & "  frm.Controls(""lblSt"").Caption = ""  Loaded "" & mTableName & "" ("" & dr & "" rows, "" & lc & "" cols)""" & vbCrLf
+    c = c & "  Exit Sub" & vbCrLf
+    c = c & "LdErr:" & vbCrLf
+    c = c & "  frm.Controls(""lblSt"").Caption = ""  Error: "" & Err.Description" & vbCrLf
+    c = c & "  MsgBox ""LoadTable Error: "" & Err.Description, vbExclamation" & vbCrLf
+    c = c & "End Sub" & vbCrLf & vbCrLf
+    
+    ' =============================
+    '  FilterTable
+    ' =============================
+    c = c & "Public Sub FilterTable(frm As Object)" & vbCrLf
+    c = c & "  On Error Resume Next" & vbCrLf
+    c = c & "  Dim srch As String" & vbCrLf
+    c = c & "  Dim i As Long" & vbCrLf
+    c = c & "  Dim j As Long" & vbCrLf
+    c = c & "  Dim k As Long" & vbCrLf
+    c = c & "  Dim su As String" & vbCrLf
+    c = c & "  If mRowCount = 0 Then Exit Sub" & vbCrLf
+    c = c & "  srch = Trim(frm.txtSearch.Value)" & vbCrLf
+    c = c & "  If srch = ""Search all columns..."" Then srch = """"" & vbCrLf
+    c = c & "  If srch = """" Then" & vbCrLf
+    c = c & "    ReDim mFilterIdx(1 To mRowCount)" & vbCrLf
+    c = c & "    mFilterCount = mRowCount" & vbCrLf
+    c = c & "    For k = 1 To mRowCount" & vbCrLf
+    c = c & "      mFilterIdx(k) = k" & vbCrLf
+    c = c & "    Next k" & vbCrLf
+    c = c & "  Else" & vbCrLf
+    c = c & "    su = UCase(srch)" & vbCrLf
+    c = c & "    ReDim mFilterIdx(1 To mRowCount)" & vbCrLf
+    c = c & "    mFilterCount = 0" & vbCrLf
+    c = c & "    For i = 1 To mRowCount" & vbCrLf
+    c = c & "      For j = 1 To mColCount" & vbCrLf
+    c = c & "        If InStr(1, UCase(CStr(mData(i, j))), su) > 0 Then" & vbCrLf
+    c = c & "          mFilterCount = mFilterCount + 1" & vbCrLf
+    c = c & "          mFilterIdx(mFilterCount) = i" & vbCrLf
+    c = c & "          Exit For" & vbCrLf
+    c = c & "        End If" & vbCrLf
+    c = c & "      Next j" & vbCrLf
+    c = c & "    Next i" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  frm.CurPage = 1" & vbCrLf
+    c = c & "  Call RenderPage(frm)" & vbCrLf
+    c = c & "  frm.Controls(""lblSt"").Caption = ""  Filter: "" & mFilterCount & "" of "" & mRowCount" & vbCrLf
+    c = c & "  On Error GoTo 0" & vbCrLf
+    c = c & "End Sub" & vbCrLf & vbCrLf
+    
+    ' =============================
+    '  RenderPage
+    ' =============================
+    c = c & "Public Sub RenderPage(frm As Object)" & vbCrLf
+    c = c & "  On Error Resume Next" & vbCrLf
+    c = c & "  Dim lst As Object" & vbCrLf
+    c = c & "  Dim ps As Long" & vbCrLf
+    c = c & "  Dim tp As Long" & vbCrLf
+    c = c & "  Dim sR As Long" & vbCrLf
+    c = c & "  Dim eR As Long" & vbCrLf
+    c = c & "  Dim nR As Long" & vbCrLf
+    c = c & "  Dim r As Long" & vbCrLf
+    c = c & "  Dim rw As Long" & vbCrLf
+    c = c & "  Dim idx As Long" & vbCrLf
+    c = c & "  Dim j As Long" & vbCrLf
+    c = c & "  Dim colW As Long" & vbCrLf
+    c = c & "  Dim cwStr As String" & vbCrLf
+    c = c & "  Dim cj As Long" & vbCrLf
+    c = c & "  Set lst = frm.Controls(""fraData"").Controls(""lstData"")" & vbCrLf
+    c = c & "  lst.Clear" & vbCrLf
+    c = c & "  If mColCount > 0 Then" & vbCrLf
+    c = c & "    lst.ColumnCount = mColCount" & vbCrLf
+    c = c & "    colW = 110" & vbCrLf
+    c = c & "    cwStr = """"" & vbCrLf
+    c = c & "    For cj = 1 To mColCount" & vbCrLf
+    c = c & "      If cj > 1 Then cwStr = cwStr & "";"" " & vbCrLf
+    c = c & "      cwStr = cwStr & colW" & vbCrLf
+    c = c & "    Next cj" & vbCrLf
+    c = c & "    lst.ColumnWidths = cwStr" & vbCrLf
+    c = c & "    frm.Controls(""fraData"").Controls(""lstHeaders"").ColumnWidths = cwStr" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  ps = frm.PageSize" & vbCrLf
+    c = c & "  If ps < 1 Then ps = 50" & vbCrLf
+    c = c & "  If mFilterCount > 0 Then" & vbCrLf
+    c = c & "    tp = Int((mFilterCount + ps - 1) / ps)" & vbCrLf
+    c = c & "  Else" & vbCrLf
+    c = c & "    tp = 1" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  frm.TotalPages = tp" & vbCrLf
+    c = c & "  If frm.CurPage > tp Then frm.CurPage = tp" & vbCrLf
+    c = c & "  If frm.CurPage < 1 Then frm.CurPage = 1" & vbCrLf
+    c = c & "  sR = (frm.CurPage - 1) * ps + 1" & vbCrLf
+    c = c & "  eR = sR + ps - 1" & vbCrLf
+    c = c & "  If eR > mFilterCount Then eR = mFilterCount" & vbCrLf
+    c = c & "  nR = eR - sR + 1" & vbCrLf
+    c = c & "  If nR < 1 Then nR = 0" & vbCrLf
+    c = c & "  If nR > 0 And mColCount > 0 Then" & vbCrLf
+    c = c & "    For r = sR To eR" & vbCrLf
+    c = c & "      idx = mFilterIdx(r)" & vbCrLf
+    c = c & "      lst.AddItem CStr(mData(idx, 1))" & vbCrLf
+    c = c & "      rw = lst.ListCount - 1" & vbCrLf
+    c = c & "      For j = 2 To mColCount" & vbCrLf
+    c = c & "        lst.List(rw, j - 1) = CStr(mData(idx, j))" & vbCrLf
+    c = c & "      Next j" & vbCrLf
+    c = c & "    Next r" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  frm.Controls(""lblPage"").Caption = "" Page "" & frm.CurPage & "" / "" & tp & "" """ & vbCrLf
+    c = c & "  frm.Controls(""lblRCount"").Caption = ""  "" & mFilterCount & "" records  |  "" & mColCount & "" cols""" & vbCrLf
+    c = c & "  On Error GoTo 0" & vbCrLf
+    c = c & "End Sub" & vbCrLf & vbCrLf
+    
+    ' =============================
+    '  ExportCSV
+    ' =============================
+    c = c & "Public Sub ExportCSV(frm As Object)" & vbCrLf
+    c = c & "  On Error GoTo CsvErr" & vbCrLf
+    c = c & "  If mTableName = """" Then Exit Sub" & vbCrLf
+    c = c & "  If mRowCount = 0 Then Exit Sub" & vbCrLf
+    c = c & "  Dim fPath As Variant" & vbCrLf
+    c = c & "  fPath = Application.GetSaveAsFilename(mTableName & "".csv"", ""CSV (*.csv),*.csv"")" & vbCrLf
+    c = c & "  If fPath = False Then Exit Sub" & vbCrLf
+    c = c & "  Dim fNum As Integer" & vbCrLf
+    c = c & "  fNum = FreeFile" & vbCrLf
+    c = c & "  Open CStr(fPath) For Output As #fNum" & vbCrLf
+    c = c & "  Dim j As Long" & vbCrLf
+    c = c & "  Dim hdr As String" & vbCrLf
+    c = c & "  Dim i As Long" & vbCrLf
+    c = c & "  Dim ln As String" & vbCrLf
+    c = c & "  Dim idx As Long" & vbCrLf
+    c = c & "  hdr = """"" & vbCrLf
+    c = c & "  For j = 1 To mColCount" & vbCrLf
+    c = c & "    If j > 1 Then hdr = hdr & "","" " & vbCrLf
+    c = c & "    hdr = hdr & Chr(34) & mHeaders(j) & Chr(34)" & vbCrLf
+    c = c & "  Next j" & vbCrLf
+    c = c & "  Print #fNum, hdr" & vbCrLf
+    c = c & "  For i = 1 To mFilterCount" & vbCrLf
+    c = c & "    idx = mFilterIdx(i)" & vbCrLf
+    c = c & "    ln = """"" & vbCrLf
+    c = c & "    For j = 1 To mColCount" & vbCrLf
+    c = c & "      If j > 1 Then ln = ln & "","" " & vbCrLf
+    c = c & "      ln = ln & Chr(34) & CStr(mData(idx, j)) & Chr(34)" & vbCrLf
+    c = c & "    Next j" & vbCrLf
+    c = c & "    Print #fNum, ln" & vbCrLf
+    c = c & "  Next i" & vbCrLf
+    c = c & "  Close #fNum" & vbCrLf
+    c = c & "  frm.Controls(""lblSt"").Caption = ""  Exported "" & mFilterCount & "" rows.""" & vbCrLf
+    c = c & "  MsgBox ""Exported "" & mFilterCount & "" rows."", vbInformation" & vbCrLf
+    c = c & "  Exit Sub" & vbCrLf
+    c = c & "CsvErr:" & vbCrLf
+    c = c & "  MsgBox ""Export error: "" & Err.Description, vbCritical" & vbCrLf
+    c = c & "End Sub" & vbCrLf & vbCrLf
+    
+    ' =============================
+    '  DeleteSelectedRow
+    ' =============================
+    c = c & "Public Sub DeleteSelectedRow(frm As Object)" & vbCrLf
+    c = c & "  On Error GoTo DelErr" & vbCrLf
+    c = c & "  Dim lstIdx As Long" & vbCrLf
+    c = c & "  Dim pgOff As Long" & vbCrLf
+    c = c & "  Dim fPos As Long" & vbCrLf
+    c = c & "  Dim dIdx As Long" & vbCrLf
+    c = c & "  Dim sRow As Long" & vbCrLf
+    c = c & "  Dim ans As VbMsgBoxResult" & vbCrLf
+    c = c & "  Dim ws As Worksheet" & vbCrLf
+    c = c & "  If mTableName = """" Then Exit Sub" & vbCrLf
+    c = c & "  If mTableName = ""DB_Users"" Or mTableName = ""DB_Settings"" Then" & vbCrLf
+    c = c & "    MsgBox ""Protected table."", vbCritical" & vbCrLf
+    c = c & "    Exit Sub" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  If frm.Controls(""fraData"").Controls(""lstData"").ListIndex < 0 Then" & vbCrLf
+    c = c & "    MsgBox ""Select a row first."", vbExclamation" & vbCrLf
+    c = c & "    Exit Sub" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  lstIdx = frm.Controls(""fraData"").Controls(""lstData"").ListIndex" & vbCrLf
+    c = c & "  pgOff = (frm.CurPage - 1) * frm.PageSize" & vbCrLf
+    c = c & "  fPos = pgOff + lstIdx + 1" & vbCrLf
+    c = c & "  If fPos < 1 Or fPos > mFilterCount Then Exit Sub" & vbCrLf
+    c = c & "  dIdx = mFilterIdx(fPos)" & vbCrLf
+    c = c & "  sRow = dIdx + 1" & vbCrLf
+    c = c & "  ans = MsgBox(""Delete row "" & sRow & "" from "" & mTableName & ""?"", vbYesNo + vbExclamation)" & vbCrLf
+    c = c & "  If ans <> vbYes Then Exit Sub" & vbCrLf
+    c = c & "  Set ws = ThisWorkbook.Sheets(mTableName)" & vbCrLf
+    c = c & "  On Error Resume Next" & vbCrLf
+    c = c & "  ws.Unprotect ""MIS2026""" & vbCrLf
+    c = c & "  On Error GoTo DelErr" & vbCrLf
+    c = c & "  ws.Rows(sRow).Delete" & vbCrLf
+    c = c & "  ws.Protect ""MIS2026"", UserInterfaceOnly:=True" & vbCrLf
+    c = c & "  frm.Controls(""lblSt"").Caption = ""  Deleted row "" & sRow" & vbCrLf
+    c = c & "  Call LoadTable(frm)" & vbCrLf
+    c = c & "  Exit Sub" & vbCrLf
+    c = c & "DelErr:" & vbCrLf
+    c = c & "  MsgBox ""Delete error: "" & Err.Description, vbCritical" & vbCrLf
+    c = c & "End Sub" & vbCrLf & vbCrLf
+    
+    ' =============================
+    '  PrintTable
+    ' =============================
+    c = c & "Public Sub PrintTable(frm As Object)" & vbCrLf
+    c = c & "  On Error GoTo PrtErr" & vbCrLf
+    c = c & "  Dim ws As Worksheet" & vbCrLf
+    c = c & "  Dim lr As Long" & vbCrLf
+    c = c & "  Dim lc As Long" & vbCrLf
+    c = c & "  If mTableName = """" Then Exit Sub" & vbCrLf
+    c = c & "  Set ws = ThisWorkbook.Sheets(mTableName)" & vbCrLf
+    c = c & "  lr = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row" & vbCrLf
+    c = c & "  If lr < 2 Then Exit Sub" & vbCrLf
+    c = c & "  lc = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column" & vbCrLf
+    c = c & "  ws.PageSetup.PrintArea = ws.Range(ws.Cells(1, 1), ws.Cells(lr, lc)).Address" & vbCrLf
+    c = c & "  ws.PageSetup.Orientation = xlLandscape" & vbCrLf
+    c = c & "  ws.PageSetup.FitToPagesWide = 1" & vbCrLf
+    c = c & "  ws.PageSetup.FitToPagesTall = False" & vbCrLf
+    c = c & "  ws.PrintPreview" & vbCrLf
+    c = c & "  frm.Controls(""lblSt"").Caption = ""  Print preview: "" & mTableName" & vbCrLf
+    c = c & "  Exit Sub" & vbCrLf
+    c = c & "PrtErr:" & vbCrLf
+    c = c & "  MsgBox ""Print error: "" & Err.Description, vbCritical" & vbCrLf
+    c = c & "End Sub" & vbCrLf
+    
+    m.CodeModule.AddFromString c
+End Sub
+
+
+
