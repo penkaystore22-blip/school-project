@@ -84,6 +84,7 @@ Public Sub AutoSetup()
     Call CreateModMouseWheel: DoEvents
     Call CreateModImport: DoEvents
     Call CreateModReceipts: DoEvents
+    Call CreateModStudentDB: DoEvents
     
     ' --- forms ---
     Call CreateLoginForm
@@ -106,6 +107,7 @@ Public Sub AutoSetup()
     Call CreateBackupForm: DoEvents
     Call CreateFeeReceiptForm: DoEvents
     Call CreateImportRollForm: DoEvents
+    Call CreateStudentDBForm: DoEvents
     
     ' --- workbook-level code ---
     Call CreateThisWorkbookCode: DoEvents
@@ -1737,7 +1739,7 @@ Private Sub CreateModCRUD()
     c = c & "  Call ResetAdmForm(frm)" & vbCrLf
     c = c & "End Sub" & vbCrLf
     ' --- SafeSetCombo: prevents Error 380 ---
-    c = c & "Private Sub SafeSetCombo(frm As Object, ctrlName As String, val As Variant)" & vbCrLf
+    c = c & "Public Sub SafeSetCombo(frm As Object, ctrlName As String, val As Variant)" & vbCrLf
     c = c & "  On Error Resume Next" & vbCrLf
     c = c & "  Dim v As String: v = CStr(val)" & vbCrLf
     c = c & "  If v = """" Then frm.Controls(ctrlName).Value = """": Exit Sub" & vbCrLf
@@ -3466,7 +3468,7 @@ Private Sub CreateModDashboard()
     c = c & "  Dim nm As String: nm = Application.Caller" & vbCrLf
     c = c & "  Select Case nm" & vbCrLf
     c = c & "    Case ""btnAdm"": frmAdmission.Show vbModeless" & vbCrLf
-    c = c & "    Case ""btnPup"": frmAdmission.Show vbModeless" & vbCrLf
+    c = c & "    Case ""btnPup"": frmStudentDB.Show vbModeless" & vbCrLf
     c = c & "    Case ""btnFee"": frmFees.Show vbModeless" & vbCrLf
     c = c & "    Case ""btnArr"": Call RptFeeArrears" & vbCrLf
     c = c & "    Case ""btnAtt"": frmAttendance.Show vbModeless" & vbCrLf
@@ -9525,5 +9527,535 @@ Private Sub CreateModDatabase()
     m.CodeModule.AddFromString c
 End Sub
 
+
+' -------------------------------------------------------------
+'  FORM: frmStudentDB – Student Database Browser & Editor
+' -------------------------------------------------------------
+Private Sub CreateStudentDBForm()
+    Dim FW As Single: FW = 780   ' form width
+    Dim FH As Single: FH = 400   ' form height
+    Dim M As Single: M = 10      ' outer margin
+    Dim f As Object: Set f = AddForm("frmStudentDB", "Student Database", FW, FH)
+    Dim d As Object: Set d = f.Designer
+    Dim ctl As Object
+    f.Properties("BackColor") = &HF7F7F7
+
+    ' =========================================================
+    '  HEADER BAR (26px)
+    ' =========================================================
+    AL d, "lblT", "  " & ChrW(9679) & "  STUDENT DATABASE", 0, 0, FW, 26, 11
+    d.Controls("lblT").Font.Bold = True: d.Controls("lblT").ForeColor = &HFFFFFF
+    d.Controls("lblT").BackColor = &H1F3864: d.Controls("lblT").TextAlign = 1
+    d.Controls("lblT").Font.Name = "Segoe UI"
+    AL d, "lblAcc2", "", 0, 26, FW, 2
+    d.Controls("lblAcc2").BackColor = &HD4A537: d.Controls("lblAcc2").Caption = ""
+
+    ' =========================================================
+    '  FILTER BAR (28px)
+    ' =========================================================
+    AL d, "lblFltBg", "", 0, 28, FW, 28
+    d.Controls("lblFltBg").BackColor = &HEEF0F2: d.Controls("lblFltBg").Caption = ""
+
+    AL d, "lFC", "Class:", M + 6, 33, 34, 14, 8
+    d.Controls("lFC").Font.Bold = True: d.Controls("lFC").ForeColor = &H333333: d.Controls("lFC").BackStyle = 0
+    AC d, "cmbFltClass", M + 42, 32, 74
+    d.Controls("cmbFltClass").Font.Size = 8: d.Controls("cmbFltClass").Height = 19
+
+    AL d, "lFS", "Stream:", M + 126, 33, 42, 14, 8
+    d.Controls("lFS").Font.Bold = True: d.Controls("lFS").ForeColor = &H333333: d.Controls("lFS").BackStyle = 0
+    AC d, "cmbFltStream", M + 170, 32, 66
+    d.Controls("cmbFltStream").Font.Size = 8: d.Controls("cmbFltStream").Height = 19
+
+    AL d, "lFG", "Gender:", M + 246, 33, 42, 14, 8
+    d.Controls("lFG").Font.Bold = True: d.Controls("lFG").ForeColor = &H333333: d.Controls("lFG").BackStyle = 0
+    AC d, "cmbFltGender", M + 290, 32, 66
+    d.Controls("cmbFltGender").Font.Size = 8: d.Controls("cmbFltGender").Height = 19: d.Controls("cmbFltGender").Style = 2
+
+    AB d, "btnLoadList", ChrW(9654) & " LOAD", M + 366, 31, 60, 20, &H1F4E79, &HFFFFFF
+    d.Controls("btnLoadList").Font.Size = 8: d.Controls("btnLoadList").Font.Bold = True
+
+    AL d, "lblStudentCount", "0 students", M + 436, 34, 90, 12, 8
+    d.Controls("lblStudentCount").ForeColor = &H777777: d.Controls("lblStudentCount").BackStyle = 0
+
+    ' =========================================================
+    '  LEFT PANEL: Search + Student List
+    ' =========================================================
+    Dim lpW As Single: lpW = 300
+    Dim pTop As Single: pTop = 60
+
+    ' Search bar with icon
+    AL d, "lblSrchBg", "", M, pTop, lpW - M, 24
+    d.Controls("lblSrchBg").BackColor = &HFFFFFF: d.Controls("lblSrchBg").Caption = ""
+    d.Controls("lblSrchBg").BorderStyle = 1: d.Controls("lblSrchBg").BorderColor = &HC0C0C0
+
+    AL d, "lblSrchIco", ChrW(9906), M + 5, pTop + 5, 14, 14, 9
+    d.Controls("lblSrchIco").ForeColor = &H999999: d.Controls("lblSrchIco").BackStyle = 0
+
+    AT d, "txtSearchName", M + 20, pTop + 3, lpW - M - 24, 18
+    d.Controls("txtSearchName").Font.Size = 8: d.Controls("txtSearchName").Font.Name = "Segoe UI"
+    d.Controls("txtSearchName").BorderStyle = 0
+
+    ' Column headers (navy strip)
+    Dim lTop As Single: lTop = pTop + 26
+    AL d, "lH1", " Adm", M, lTop, 72, 12, 7
+    d.Controls("lH1").Font.Bold = True: d.Controls("lH1").ForeColor = &HFFFFFF: d.Controls("lH1").BackColor = &H1F3864
+    AL d, "lH2", "Surname", M + 72, lTop, 64, 12, 7
+    d.Controls("lH2").Font.Bold = True: d.Controls("lH2").ForeColor = &HFFFFFF: d.Controls("lH2").BackColor = &H1F3864
+    AL d, "lH3", "Others", M + 136, lTop, 64, 12, 7
+    d.Controls("lH3").Font.Bold = True: d.Controls("lH3").ForeColor = &HFFFFFF: d.Controls("lH3").BackColor = &H1F3864
+    AL d, "lH4", "G", M + 200, lTop, 22, 12, 7
+    d.Controls("lH4").Font.Bold = True: d.Controls("lH4").ForeColor = &HFFFFFF: d.Controls("lH4").BackColor = &H1F3864
+    AL d, "lH5", "Stream", M + 222, lTop, 56, 12, 7
+    d.Controls("lH5").Font.Bold = True: d.Controls("lH5").ForeColor = &HFFFFFF: d.Controls("lH5").BackColor = &H1F3864
+
+    ' Student ListBox
+    Dim lstTop As Single: lstTop = lTop + 12
+    Dim lstH As Single: lstH = 260
+    Dim lst As Object: Set lst = d.Controls.Add("Forms.ListBox.1", "lstStudents")
+    lst.Left = M: lst.Top = lstTop: lst.Width = lpW - M: lst.Height = lstH
+    lst.Font.Size = 8: lst.Font.Name = "Consolas"
+    lst.ColumnCount = 5: lst.ColumnWidths = "72;62;62;20;54"
+    lst.ColumnHeads = False: lst.IntegralHeight = False
+    lst.BorderStyle = 1: lst.BorderColor = &HC0C0C0: lst.BackColor = &HFFFFFF
+
+    ' =========================================================
+    '  VERTICAL DIVIDER
+    ' =========================================================
+    AL d, "lblVDiv", "", lpW + 1, pTop, 1, lstH + 38
+    d.Controls("lblVDiv").BackColor = &HC0C0C0: d.Controls("lblVDiv").Caption = ""
+
+    ' =========================================================
+    '  RIGHT PANEL
+    ' =========================================================
+    Dim rL As Single: rL = lpW + 6          ' right panel left
+    Dim rpR As Single: rpR = FW - M - 8       ' right panel right edge
+    Dim rW As Single: rW = rpR - rL          ' right panel total width
+    Dim rr As Single: rr = 22               ' row height (comfortable)
+    Dim lbW As Single: lbW = 58             ' label width
+    Dim g As Single: g = 6                  ' gap between col pairs
+    Dim y As Single: y = pTop + 2
+
+    ' ---- Photo mini-panel (top-right) ----
+    Dim phW As Single: phW = 98
+    Dim phL As Single: phL = rpR - phW
+    AL d, "lblPhotoBg", "", phL, y, phW, 108
+    d.Controls("lblPhotoBg").BackColor = &HF0F2F4: d.Controls("lblPhotoBg").Caption = ""
+    d.Controls("lblPhotoBg").BorderStyle = 1: d.Controls("lblPhotoBg").BorderColor = &HC0C0C0
+
+    Set ctl = d.Controls.Add("Forms.Image.1", "imgPhoto")
+    ctl.Left = phL + 5: ctl.Top = y + 4: ctl.Width = phW - 10: ctl.Height = 80
+    ctl.BorderStyle = 1: ctl.BackColor = &HFFFFFF: ctl.PictureSizeMode = 1: ctl.BorderColor = &HD0D0D0
+
+    AB d, "btnPhoto", ChrW(9998) & " Photo", phL + 5, y + 87, phW - 10, 17, &H00695C, &HFFFFFF
+    d.Controls("btnPhoto").Font.Size = 7: d.Controls("btnPhoto").Font.Bold = True
+
+    ' ---- Field columns (left of photo) ----
+    Dim fW1 As Single: fW1 = rW - phW - 6   ' usable width left of photo
+    Dim c1L As Single: c1L = rL
+    Dim c1T As Single: c1T = rL + lbW
+    Dim c1W As Single: c1W = (fW1 - lbW * 2 - g) / 2
+    If c1W < 86 Then c1W = 86
+    Dim c2L As Single: c2L = c1T + c1W + g
+    Dim c2T As Single: c2T = c2L + lbW
+    Dim c2W As Single: c2W = c1W
+
+    ' Row 1: Stud ID / Adm No
+    AL d, "la", "Stud ID:", c1L, y + 3, lbW, 14, 8
+    d.Controls("la").Font.Bold = True: d.Controls("la").ForeColor = &H555555: d.Controls("la").TextAlign = 3: d.Controls("la").BackStyle = 0
+    AT d, "txtSID", c1T, y + 1, c1W, 18
+    d.Controls("txtSID").Font.Size = 8: d.Controls("txtSID").Enabled = False: d.Controls("txtSID").BackColor = &HF0F0F0
+
+    AL d, "lb", "Adm No:", c2L, y + 3, lbW, 14, 8
+    d.Controls("lb").Font.Bold = True: d.Controls("lb").ForeColor = &H555555: d.Controls("lb").TextAlign = 3: d.Controls("lb").BackStyle = 0
+    AT d, "txtAdm", c2T, y + 1, c2W, 18
+    d.Controls("txtAdm").Font.Size = 8
+
+    y = y + rr
+    ' Row 2: Surname / Other Names
+    AL d, "lc", "Surname:", c1L, y + 3, lbW, 14, 8
+    d.Controls("lc").Font.Bold = True: d.Controls("lc").ForeColor = &H555555: d.Controls("lc").TextAlign = 3: d.Controls("lc").BackStyle = 0
+    AT d, "txtFN", c1T, y + 1, c1W, 18
+    d.Controls("txtFN").Font.Size = 8
+
+    AL d, "ld", "Others:", c2L, y + 3, lbW, 14, 8
+    d.Controls("ld").Font.Bold = True: d.Controls("ld").ForeColor = &H555555: d.Controls("ld").TextAlign = 3: d.Controls("ld").BackStyle = 0
+    AT d, "txtLN", c2T, y + 1, c2W, 18
+    d.Controls("txtLN").Font.Size = 8
+
+    y = y + rr
+    ' Row 3: DOB / Gender
+    AL d, "le", "DOB:", c1L, y + 3, lbW, 14, 8
+    d.Controls("le").Font.Bold = True: d.Controls("le").ForeColor = &H555555: d.Controls("le").TextAlign = 3: d.Controls("le").BackStyle = 0
+    AT d, "txtDOB", c1T, y + 1, c1W, 18
+    d.Controls("txtDOB").Font.Size = 8
+
+    AL d, "lf", "Gender:", c2L, y + 3, lbW, 14, 8
+    d.Controls("lf").Font.Bold = True: d.Controls("lf").ForeColor = &H555555: d.Controls("lf").TextAlign = 3: d.Controls("lf").BackStyle = 0
+    AC d, "cmbGen", c2T, y + 1, c2W
+    d.Controls("cmbGen").Font.Size = 8: d.Controls("cmbGen").Height = 18
+
+    y = y + rr
+    ' Row 4: Class / Stream
+    AL d, "lg", "Class:", c1L, y + 3, lbW, 14, 8
+    d.Controls("lg").Font.Bold = True: d.Controls("lg").ForeColor = &H555555: d.Controls("lg").TextAlign = 3: d.Controls("lg").BackStyle = 0
+    AC d, "cmbCls", c1T, y + 1, c1W
+    d.Controls("cmbCls").Font.Size = 8: d.Controls("cmbCls").Height = 18
+
+    AL d, "lgStr", "Stream:", c2L, y + 3, lbW, 14, 8
+    d.Controls("lgStr").Font.Bold = True: d.Controls("lgStr").ForeColor = &H555555: d.Controls("lgStr").TextAlign = 3: d.Controls("lgStr").BackStyle = 0
+    AC d, "cmbStream", c2T, y + 1, c2W
+    d.Controls("cmbStream").Font.Size = 8: d.Controls("cmbStream").Height = 18
+
+    y = y + rr
+    ' Row 5: UPI / Birth Cert
+    AL d, "lh", "UPI:", c1L, y + 3, lbW, 14, 8
+    d.Controls("lh").Font.Bold = True: d.Controls("lh").ForeColor = &H555555: d.Controls("lh").TextAlign = 3: d.Controls("lh").BackStyle = 0
+    AT d, "txtUPI", c1T, y + 1, c1W, 18
+    d.Controls("txtUPI").Font.Size = 8
+
+    AL d, "li", "BirthCrt:", c2L, y + 3, lbW, 14, 8
+    d.Controls("li").Font.Bold = True: d.Controls("li").ForeColor = &H555555: d.Controls("li").TextAlign = 3: d.Controls("li").BackStyle = 0
+    AT d, "txtBC", c2T, y + 1, c2W, 18
+    d.Controls("txtBC").Font.Size = 8
+
+    ' ---- Divider (below photo area) ----
+    y = y + rr + 2
+    AL d, "lblDiv", "", rL, y, rW, 1
+    d.Controls("lblDiv").BackColor = &HC0C0C0: d.Controls("lblDiv").Caption = ""
+    y = y + 5
+
+    ' ---- Full-width rows ----
+    Dim fFullW As Single: fFullW = rW - lbW
+
+    ' Row 6: Status / Blood Group
+    AL d, "lj", "Status:", c1L, y + 3, lbW, 14, 8
+    d.Controls("lj").Font.Bold = True: d.Controls("lj").ForeColor = &H555555: d.Controls("lj").TextAlign = 3: d.Controls("lj").BackStyle = 0
+    AC d, "cmbSts", c1T, y + 1, c1W
+    d.Controls("cmbSts").Font.Size = 8: d.Controls("cmbSts").Height = 18
+
+    AL d, "lk", "Blood:", c2L, y + 3, lbW, 14, 8
+    d.Controls("lk").Font.Bold = True: d.Controls("lk").ForeColor = &H555555: d.Controls("lk").TextAlign = 3: d.Controls("lk").BackStyle = 0
+    AC d, "cmbBG", c2T, y + 1, rpR - c2T, 18
+    d.Controls("cmbBG").Font.Size = 8: d.Controls("cmbBG").Height = 18
+
+    y = y + rr
+    ' Row 7: Guardian / Phone
+    AL d, "pa", "Parent:", c1L, y + 3, lbW, 14, 8
+    d.Controls("pa").Font.Bold = True: d.Controls("pa").ForeColor = &H555555: d.Controls("pa").TextAlign = 3: d.Controls("pa").BackStyle = 0
+    AT d, "txtGN", c1T, y + 1, c1W, 18
+    d.Controls("txtGN").Font.Size = 8
+
+    AL d, "pb", "Phone:", c2L, y + 3, lbW, 14, 8
+    d.Controls("pb").Font.Bold = True: d.Controls("pb").ForeColor = &H555555: d.Controls("pb").TextAlign = 3: d.Controls("pb").BackStyle = 0
+    AT d, "txtGP", c2T, y + 1, rpR - c2T, 18
+    d.Controls("txtGP").Font.Size = 8
+
+    y = y + rr
+    ' Row 8: Allergies / Special Needs
+    AL d, "pd", "Allergy:", c1L, y + 3, lbW, 14, 8
+    d.Controls("pd").Font.Bold = True: d.Controls("pd").ForeColor = &H555555: d.Controls("pd").TextAlign = 3: d.Controls("pd").BackStyle = 0
+    AT d, "txtAlg", c1T, y + 1, c1W, 18
+    d.Controls("txtAlg").Font.Size = 8
+
+    AL d, "pe", "SplNeed:", c2L, y + 3, lbW, 14, 8
+    d.Controls("pe").Font.Bold = True: d.Controls("pe").ForeColor = &H555555: d.Controls("pe").TextAlign = 3: d.Controls("pe").BackStyle = 0
+    AT d, "txtSN", c2T, y + 1, rpR - c2T, 18
+    d.Controls("txtSN").Font.Size = 8
+
+    ' =========================================================
+    '  ACTION BUTTONS
+    ' =========================================================
+    y = y + rr + 6
+    Dim bW As Single: bW = 76
+    Dim bH As Single: bH = 24
+    AB d, "btnUpdate", ChrW(8634) & " Update", rL, y, bW, bH, &H1F4E79, &HFFFFFF
+    d.Controls("btnUpdate").Font.Size = 8: d.Controls("btnUpdate").Font.Bold = True
+    AB d, "btnDelete", ChrW(10005) & " Delete", rL + bW + 4, y, bW, bH, &HC62828, &HFFFFFF
+    d.Controls("btnDelete").Font.Size = 8: d.Controls("btnDelete").Font.Bold = True
+    AB d, "btnClear", "Clear", rL + (bW + 4) * 2, y, 60, bH, &H757575, &HFFFFFF
+    d.Controls("btnClear").Font.Size = 8
+    AB d, "btnClose", "Close", rpR - 64, y, 64, bH, &H37474F, &HFFFFFF
+    d.Controls("btnClose").Font.Size = 8: d.Controls("btnClose").Font.Bold = True
+
+    ' =========================================================
+    '  STATUS BAR
+    ' =========================================================
+    Dim stY As Single: stY = FH - 22
+    AL d, "lblSt", " Ready.", 0, stY, FW, 18, 8
+    d.Controls("lblSt").BackColor = &H1F3864: d.Controls("lblSt").ForeColor = &HFFFFFF
+    d.Controls("lblSt").Font.Name = "Segoe UI"
+
+    ' =========================================================
+    '  USERFORM CODE
+    ' =========================================================
+    Dim c$: c = "Option Explicit" & vbCrLf & "Public CurrentRow As Long" & vbCrLf
+    c = c & "Private Sub UserForm_Initialize()" & vbCrLf
+    c = c & "  CurrentRow = 0" & vbCrLf
+    c = c & "  Call InitStudentDBForm(Me)" & vbCrLf
+    c = c & "  Call CenterForm(Me)" & vbCrLf
+    c = c & "End Sub" & vbCrLf
+    c = c & "Private Sub cmbFltClass_Change(): Call PopulateFilterStreams(Me): End Sub" & vbCrLf
+    c = c & "Private Sub btnLoadList_Click(): Call LoadStudentList(Me): End Sub" & vbCrLf
+    c = c & "Private Sub lstStudents_Click(): Call LoadStudentFromList(Me): End Sub" & vbCrLf
+    c = c & "Private Sub txtSearchName_Change(): Call FilterStudentListByName(Me): End Sub" & vbCrLf
+    c = c & "Private Sub cmbCls_Change(): Call PopulateStreams(Me, Me.Controls(""cmbCls"").Value): End Sub" & vbCrLf
+    c = c & "Private Sub btnUpdate_Click(): Call UpdateStudentDB(Me): End Sub" & vbCrLf
+    c = c & "Private Sub btnDelete_Click(): Call DeleteStudentDB(Me): End Sub" & vbCrLf
+    c = c & "Private Sub btnPhoto_Click(): Call BrowsePhoto(Me): End Sub" & vbCrLf
+    c = c & "Private Sub btnClear_Click(): Call ClearStudentDBForm(Me): End Sub" & vbCrLf
+    c = c & "Private Sub btnClose_Click(): Unload Me: End Sub" & vbCrLf
+    c = c & "Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)" & vbCrLf
+    c = c & "  On Error Resume Next" & vbCrLf
+    c = c & "  Dim dWs As Worksheet: Set dWs = ThisWorkbook.Sheets(""Dashboard"")" & vbCrLf
+    c = c & "  If Not dWs Is Nothing Then dWs.Activate" & vbCrLf
+    c = c & "  On Error GoTo 0" & vbCrLf
+    c = c & "End Sub" & vbCrLf
+    f.CodeModule.AddFromString c
+End Sub
+
+'  MODULE: modStudentDB – Student Database Backend Logic
+' -------------------------------------------------------------
+Private Sub CreateModStudentDB()
+    Dim m As Object: Set m = AddMod("modStudentDB")
+    Dim c$: c = "Option Explicit" & vbCrLf
+    c = c & "Private mStudentRows() As Long" & vbCrLf
+    c = c & "Private mStudentCount As Long" & vbCrLf & vbCrLf
+
+    ' =============================
+    '  InitStudentDBForm
+    ' =============================
+    c = c & "Public Sub InitStudentDBForm(frm As Object)" & vbCrLf
+    c = c & "  On Error Resume Next" & vbCrLf
+    c = c & "  Call PopulateClassDropdown(frm, ""cmbFltClass"")" & vbCrLf
+    c = c & "  frm.Controls(""cmbFltClass"").AddItem ""All"", 0" & vbCrLf
+    c = c & "  frm.Controls(""cmbFltClass"").Value = ""All""" & vbCrLf
+    c = c & "  With frm.Controls(""cmbFltGender""): .Clear: .AddItem ""All"": .AddItem ""M"": .AddItem ""F"": .Value = ""All"": End With" & vbCrLf
+    c = c & "  With frm.Controls(""cmbGen""): .Clear: .AddItem ""Male"": .AddItem ""Female"": End With" & vbCrLf
+    c = c & "  With frm.Controls(""cmbSts""): .Clear: .AddItem ""Active"": .AddItem ""Left"": .AddItem ""Suspended"": End With" & vbCrLf
+    c = c & "  frm.Controls(""cmbBG"").Clear" & vbCrLf
+    c = c & "  Dim bg" & vbCrLf
+    c = c & "  For Each bg In Array(""A+"",""A-"",""B+"",""B-"",""O+"",""O-"",""AB+"",""AB-"")" & vbCrLf
+    c = c & "    frm.Controls(""cmbBG"").AddItem bg" & vbCrLf
+    c = c & "  Next bg" & vbCrLf
+    c = c & "  Call PopulateClassDropdown(frm, ""cmbCls"")" & vbCrLf
+    c = c & "  frm.Controls(""txtSearchName"").Value = """"" & vbCrLf
+    c = c & "  frm.Controls(""lstStudents"").Clear" & vbCrLf
+    c = c & "  mStudentCount = 0" & vbCrLf
+    c = c & "  frm.Controls(""lblSt"").Caption = "" Ready " & ChrW(8212) & " select a class and click LOAD.""" & vbCrLf
+    c = c & "  On Error GoTo 0" & vbCrLf
+    c = c & "End Sub" & vbCrLf & vbCrLf
+
+    ' =============================
+    '  PopulateFilterStreams
+    ' =============================
+    c = c & "Public Sub PopulateFilterStreams(frm As Object)" & vbCrLf
+    c = c & "  On Error Resume Next" & vbCrLf
+    c = c & "  frm.Controls(""cmbFltStream"").Clear" & vbCrLf
+    c = c & "  frm.Controls(""cmbFltStream"").AddItem ""All""" & vbCrLf
+    c = c & "  Dim cls As String: cls = Trim(frm.Controls(""cmbFltClass"").Value)" & vbCrLf
+    c = c & "  If cls = """" Or cls = ""All"" Then" & vbCrLf
+    c = c & "    frm.Controls(""cmbFltStream"").Value = ""All""" & vbCrLf
+    c = c & "    On Error GoTo 0: Exit Sub" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets(S_CLASS)" & vbCrLf
+    c = c & "  Dim i As Long" & vbCrLf
+    c = c & "  For i = 2 To ws.Cells(ws.Rows.Count, 1).End(xlUp).Row" & vbCrLf
+    c = c & "    If CStr(ws.Cells(i, 1).Value) = cls Then" & vbCrLf
+    c = c & "      If ws.Cells(i, 2).Value <> """" Then frm.Controls(""cmbFltStream"").AddItem CStr(ws.Cells(i, 2).Value)" & vbCrLf
+    c = c & "    End If" & vbCrLf
+    c = c & "  Next i" & vbCrLf
+    c = c & "  frm.Controls(""cmbFltStream"").Value = ""All""" & vbCrLf
+    c = c & "  On Error GoTo 0" & vbCrLf
+    c = c & "End Sub" & vbCrLf & vbCrLf
+
+    ' =============================
+    '  LoadStudentList
+    ' =============================
+    c = c & "Public Sub LoadStudentList(frm As Object)" & vbCrLf
+    c = c & "  On Error GoTo LdErr" & vbCrLf
+    c = c & "  Dim fCls As String: fCls = Trim(frm.Controls(""cmbFltClass"").Value)" & vbCrLf
+    c = c & "  If fCls = """" Then MsgBox ""Please select a Class first."", vbExclamation, ""Filter Required"": Exit Sub" & vbCrLf
+    c = c & "  Dim fAll As Boolean: fAll = (fCls = ""All"")" & vbCrLf
+    c = c & "  Dim fStr As String: fStr = Trim(frm.Controls(""cmbFltStream"").Value)" & vbCrLf
+    c = c & "  Dim fGen As String: fGen = Trim(frm.Controls(""cmbFltGender"").Value)" & vbCrLf
+    c = c & "  If fStr = """" Then fStr = ""All""" & vbCrLf
+    c = c & "  If fGen = """" Then fGen = ""All""" & vbCrLf
+    c = c & "  frm.Controls(""lblSt"").Caption = ""  Loading students..."": DoEvents" & vbCrLf
+    c = c & "  Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets(S_STUD)" & vbCrLf
+    c = c & "  Dim lr As Long: lr = ws.Cells(ws.Rows.Count, cSID).End(xlUp).Row" & vbCrLf
+    c = c & "  If lr < 2 Then" & vbCrLf
+    c = c & "    frm.Controls(""lstStudents"").Clear: mStudentCount = 0" & vbCrLf
+    c = c & "    frm.Controls(""lblStudentCount"").Caption = ""0 students""" & vbCrLf
+    c = c & "    frm.Controls(""lblSt"").Caption = ""  No students in database."": Exit Sub" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  ReDim mStudentRows(1 To lr)" & vbCrLf
+    c = c & "  mStudentCount = 0" & vbCrLf
+    c = c & "  Dim i As Long" & vbCrLf
+    c = c & "  For i = 2 To lr" & vbCrLf
+    c = c & "    Dim sCls As String: sCls = CStr(ws.Cells(i, cCLS).Value)" & vbCrLf
+    c = c & "    Dim sStr As String: sStr = CStr(ws.Cells(i, cSTRM).Value)" & vbCrLf
+    c = c & "    Dim sGen As String: sGen = CStr(ws.Cells(i, cGEN).Value)" & vbCrLf
+    c = c & "    If fAll Or sCls = fCls Then" & vbCrLf
+    c = c & "      If fStr = ""All"" Or sStr = fStr Then" & vbCrLf
+    c = c & "        If fGen = ""All"" Or Left(UCase(sGen),1) = Left(UCase(fGen),1) Then" & vbCrLf
+    c = c & "          mStudentCount = mStudentCount + 1" & vbCrLf
+    c = c & "          mStudentRows(mStudentCount) = i" & vbCrLf
+    c = c & "        End If" & vbCrLf
+    c = c & "      End If" & vbCrLf
+    c = c & "    End If" & vbCrLf
+    c = c & "  Next i" & vbCrLf
+    c = c & "  frm.Controls(""txtSearchName"").Value = """"" & vbCrLf
+    c = c & "  Call RenderStudentList(frm, """")" & vbCrLf
+    c = c & "  Exit Sub" & vbCrLf
+    c = c & "LdErr:" & vbCrLf
+    c = c & "  frm.Controls(""lblSt"").Caption = ""  Error: "" & Err.Description" & vbCrLf
+    c = c & "End Sub" & vbCrLf & vbCrLf
+
+    ' =============================
+    '  RenderStudentList (applies name filter)
+    ' =============================
+    c = c & "Private Sub RenderStudentList(frm As Object, nameFilter As String)" & vbCrLf
+    c = c & "  On Error Resume Next" & vbCrLf
+    c = c & "  Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets(S_STUD)" & vbCrLf
+    c = c & "  Dim lst As Object: Set lst = frm.Controls(""lstStudents"")" & vbCrLf
+    c = c & "  lst.Clear" & vbCrLf
+    c = c & "  Dim nf As String: nf = UCase(Trim(nameFilter))" & vbCrLf
+    c = c & "  Dim shown As Long: shown = 0" & vbCrLf
+    c = c & "  Dim i As Long" & vbCrLf
+    c = c & "  For i = 1 To mStudentCount" & vbCrLf
+    c = c & "    Dim r As Long: r = mStudentRows(i)" & vbCrLf
+    c = c & "    Dim fullName As String: fullName = UCase(CStr(ws.Cells(r, cFN).Value) & "" "" & CStr(ws.Cells(r, cLN).Value))" & vbCrLf
+    c = c & "    If nf = """" Or InStr(1, fullName, nf, vbTextCompare) > 0 Or InStr(1, UCase(CStr(ws.Cells(r, cADM).Value)), nf, vbTextCompare) > 0 Then" & vbCrLf
+    c = c & "      lst.AddItem CStr(ws.Cells(r, cADM).Value)" & vbCrLf
+    c = c & "      lst.List(shown, 1) = CStr(ws.Cells(r, cFN).Value)" & vbCrLf
+    c = c & "      lst.List(shown, 2) = CStr(ws.Cells(r, cLN).Value)" & vbCrLf
+    c = c & "      lst.List(shown, 3) = Left(CStr(ws.Cells(r, cGEN).Value), 1)" & vbCrLf
+    c = c & "      lst.List(shown, 4) = CStr(ws.Cells(r, cSTRM).Value)" & vbCrLf
+    c = c & "      shown = shown + 1" & vbCrLf
+    c = c & "    End If" & vbCrLf
+    c = c & "  Next i" & vbCrLf
+    c = c & "  frm.Controls(""lblStudentCount"").Caption = shown & "" students""" & vbCrLf
+    c = c & "  frm.Controls(""lblSt"").Caption = ""  Showing "" & shown & "" of "" & mStudentCount & "" students""" & vbCrLf
+    c = c & "  On Error GoTo 0" & vbCrLf
+    c = c & "End Sub" & vbCrLf & vbCrLf
+
+    ' =============================
+    '  FilterStudentListByName  (called on txtSearchName_Change)
+    ' =============================
+    c = c & "Public Sub FilterStudentListByName(frm As Object)" & vbCrLf
+    c = c & "  If mStudentCount = 0 Then Exit Sub" & vbCrLf
+    c = c & "  Call RenderStudentList(frm, frm.Controls(""txtSearchName"").Value)" & vbCrLf
+    c = c & "End Sub" & vbCrLf & vbCrLf
+
+    ' =============================
+    '  LoadStudentFromList
+    ' =============================
+    c = c & "Public Sub LoadStudentFromList(frm As Object)" & vbCrLf
+    c = c & "  On Error Resume Next" & vbCrLf
+    c = c & "  Dim lst As Object: Set lst = frm.Controls(""lstStudents"")" & vbCrLf
+    c = c & "  If lst.ListIndex < 0 Then Exit Sub" & vbCrLf
+    c = c & "  Dim admNo As String: admNo = lst.List(lst.ListIndex, 0)" & vbCrLf
+    c = c & "  On Error GoTo 0" & vbCrLf
+    c = c & "  Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets(S_STUD)" & vbCrLf
+    c = c & "  Dim lr As Long: lr = ws.Cells(ws.Rows.Count, cSID).End(xlUp).Row" & vbCrLf
+    c = c & "  Dim i As Long" & vbCrLf
+    c = c & "  For i = 2 To lr" & vbCrLf
+    c = c & "    If CStr(ws.Cells(i, cADM).Value) = admNo Then" & vbCrLf
+    c = c & "      frm.CurrentRow = i" & vbCrLf
+    c = c & "      frm.Controls(""txtSID"").Value  = CStr(ws.Cells(i, cSID).Value)" & vbCrLf
+    c = c & "      frm.Controls(""txtAdm"").Value  = CStr(ws.Cells(i, cADM).Value)" & vbCrLf
+    c = c & "      frm.Controls(""txtFN"").Value   = CStr(ws.Cells(i, cFN).Value)" & vbCrLf
+    c = c & "      frm.Controls(""txtLN"").Value   = CStr(ws.Cells(i, cLN).Value)" & vbCrLf
+    c = c & "      Call SafeSetCombo(frm, ""cmbGen"", ws.Cells(i, cGEN).Value)" & vbCrLf
+    c = c & "      frm.Controls(""txtDOB"").Value  = CStr(ws.Cells(i, cDOB).Value)" & vbCrLf
+    c = c & "      Call SafeSetCombo(frm, ""cmbCls"", ws.Cells(i, cCLS).Value)" & vbCrLf
+    c = c & "      Call PopulateStreams(frm, CStr(ws.Cells(i, cCLS).Value))" & vbCrLf
+    c = c & "      Call SafeSetCombo(frm, ""cmbStream"", ws.Cells(i, cSTRM).Value)" & vbCrLf
+    c = c & "      frm.Controls(""txtGN"").Value   = CStr(ws.Cells(i, cPN).Value)" & vbCrLf
+    c = c & "      frm.Controls(""txtGP"").Value   = CStr(ws.Cells(i, cPH).Value)" & vbCrLf
+    c = c & "      frm.Controls(""txtUPI"").Value  = CStr(ws.Cells(i, cUPI).Value)" & vbCrLf
+    c = c & "      frm.Controls(""txtBC"").Value   = CStr(ws.Cells(i, cBC).Value)" & vbCrLf
+    c = c & "      Call SafeSetCombo(frm, ""cmbSts"", ws.Cells(i, cST).Value)" & vbCrLf
+    c = c & "      frm.Controls(""txtAlg"").Value  = CStr(ws.Cells(i, cALG).Value)" & vbCrLf
+    c = c & "      frm.Controls(""txtSN"").Value   = CStr(ws.Cells(i, cSN).Value)" & vbCrLf
+    c = c & "      Call SafeSetCombo(frm, ""cmbBG"", ws.Cells(i, cBG).Value)" & vbCrLf
+    c = c & "      Call LoadPhoto(frm, CStr(ws.Cells(i, cPHO).Value))" & vbCrLf
+    c = c & "      frm.Controls(""lblSt"").Caption = ""  Editing: "" & ws.Cells(i, cFN) & "" "" & ws.Cells(i, cLN) & "" (Row "" & i & "")""" & vbCrLf
+    c = c & "      Exit Sub" & vbCrLf
+    c = c & "    End If" & vbCrLf
+    c = c & "  Next i" & vbCrLf
+    c = c & "  frm.Controls(""lblSt"").Caption = ""  Student not found.""" & vbCrLf
+    c = c & "End Sub" & vbCrLf & vbCrLf
+
+    ' =============================
+    '  UpdateStudentDB
+    ' =============================
+    c = c & "Public Sub UpdateStudentDB(frm As Object)" & vbCrLf
+    c = c & "  If frm.CurrentRow = 0 Then" & vbCrLf
+    c = c & "    MsgBox ""Select a student from the list first."", vbExclamation, ""No Student Selected""" & vbCrLf
+    c = c & "    Exit Sub" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  If Not ValidateAdmForm(frm) Then Exit Sub" & vbCrLf
+    c = c & "  Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets(S_STUD)" & vbCrLf
+    c = c & "  On Error Resume Next: ws.Unprotect ""MIS2026"": On Error GoTo 0" & vbCrLf
+    c = c & "  Dim admVal As String: admVal = Trim(frm.Controls(""txtAdm"").Value)" & vbCrLf
+    c = c & "  If IsDuplicateAdmNo(admVal, frm.CurrentRow) Then" & vbCrLf
+    c = c & "    MsgBox ""Admission Number '"" & admVal & ""' is already assigned to another student!"", vbCritical, ""Duplicate""" & vbCrLf
+    c = c & "    ws.Protect ""MIS2026"", UserInterfaceOnly:=True: Exit Sub" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  Call WriteStudentData(frm, ws, frm.CurrentRow, False)" & vbCrLf
+    c = c & "  ws.Protect ""MIS2026"", UserInterfaceOnly:=True" & vbCrLf
+    c = c & "  Call AuditLog(""Update"", ""Updated student: "" & frm.Controls(""txtFN"").Value & "" "" & frm.Controls(""txtLN"").Value & "" (ADM: "" & admVal & "")"")" & vbCrLf
+    c = c & "  MsgBox ""Student record updated successfully!"", vbInformation, ""Record Updated""" & vbCrLf
+    c = c & "  Call AutoSaveWorkbook" & vbCrLf
+    c = c & "  Call RefreshDashboardKPIs" & vbCrLf
+    c = c & "  frm.Controls(""lblSt"").Caption = "" "" & ChrW(10003) & "" Updated: "" & frm.Controls(""txtFN"").Value & "" "" & frm.Controls(""txtLN"").Value" & vbCrLf
+    c = c & "  Call LoadStudentList(frm)" & vbCrLf
+    c = c & "End Sub" & vbCrLf & vbCrLf
+
+    ' =============================
+    '  DeleteStudentDB
+    ' =============================
+    c = c & "Public Sub DeleteStudentDB(frm As Object)" & vbCrLf
+    c = c & "  If frm.CurrentRow = 0 Then" & vbCrLf
+    c = c & "    MsgBox ""Select a student from the list first."", vbExclamation, ""No Student Selected""" & vbCrLf
+    c = c & "    Exit Sub" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets(S_STUD)" & vbCrLf
+    c = c & "  Dim nm As String: nm = ws.Cells(frm.CurrentRow, cFN).Value & "" "" & ws.Cells(frm.CurrentRow, cLN).Value" & vbCrLf
+    c = c & "  If MsgBox(""DELETE student '"" & nm & ""'?"" & vbLf & vbLf & ""This action CANNOT be undone!"", vbYesNo + vbCritical, ""Confirm Delete"") = vbNo Then Exit Sub" & vbCrLf
+    c = c & "  On Error Resume Next: ws.Unprotect ""MIS2026"": On Error GoTo 0" & vbCrLf
+    c = c & "  ws.Rows(frm.CurrentRow).Delete xlUp" & vbCrLf
+    c = c & "  ws.Protect ""MIS2026"", UserInterfaceOnly:=True" & vbCrLf
+    c = c & "  Call AuditLog(""Delete"", ""Deleted student: "" & nm)" & vbCrLf
+    c = c & "  MsgBox ""Student '"" & nm & ""' deleted."", vbInformation, ""Deleted""" & vbCrLf
+    c = c & "  Call AutoSaveWorkbook" & vbCrLf
+    c = c & "  Call RefreshDashboardKPIs" & vbCrLf
+    c = c & "  Call ClearStudentDBForm(frm)" & vbCrLf
+    c = c & "  Call LoadStudentList(frm)" & vbCrLf
+    c = c & "End Sub" & vbCrLf & vbCrLf
+
+    ' =============================
+    '  ClearStudentDBForm
+    ' =============================
+    c = c & "Public Sub ClearStudentDBForm(frm As Object)" & vbCrLf
+    c = c & "  On Error Resume Next" & vbCrLf
+    c = c & "  frm.Controls(""txtSID"").Value = """": frm.Controls(""txtAdm"").Value = """"" & vbCrLf
+    c = c & "  frm.Controls(""txtFN"").Value = """": frm.Controls(""txtLN"").Value = """"" & vbCrLf
+    c = c & "  frm.Controls(""txtDOB"").Value = """": frm.Controls(""cmbGen"").Value = """"" & vbCrLf
+    c = c & "  frm.Controls(""cmbCls"").Value = """": frm.Controls(""cmbStream"").Value = """"" & vbCrLf
+    c = c & "  frm.Controls(""txtUPI"").Value = """": frm.Controls(""txtBC"").Value = """"" & vbCrLf
+    c = c & "  frm.Controls(""cmbSts"").Value = """": frm.Controls(""cmbBG"").Value = """"" & vbCrLf
+    c = c & "  frm.Controls(""txtGN"").Value = """": frm.Controls(""txtGP"").Value = """"" & vbCrLf
+    c = c & "  frm.Controls(""txtAlg"").Value = """": frm.Controls(""txtSN"").Value = """"" & vbCrLf
+    c = c & "  frm.Controls(""imgPhoto"").Picture = Nothing" & vbCrLf
+    c = c & "  ClearPhoto" & vbCrLf
+    c = c & "  frm.CurrentRow = 0" & vbCrLf
+    c = c & "  frm.Controls(""lblSt"").Caption = ""  Form cleared. Select a student from the list.""" & vbCrLf
+    c = c & "  On Error GoTo 0" & vbCrLf
+    c = c & "End Sub" & vbCrLf
+
+    m.CodeModule.AddFromString c
+End Sub
 
 
