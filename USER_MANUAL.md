@@ -1,465 +1,262 @@
-# 📘 MAGANA CBC SCHOOL MANAGEMENT SYSTEM
-## User Manual & Operations Guide
+# 🏫 MAGANA CBC SCHOOL MANAGEMENT SYSTEM
+## Comprehensive Operations Manual
 ### Version 2.0 | February 2026
 
----
-
-## TABLE OF CONTENTS
-
-1. [Getting Started](#1-getting-started)
-2. [Login & Security](#2-login--security)
-3. [Main Menu Navigation](#3-main-menu-navigation)
-4. [Student Admission](#4-student-admission)
-5. [Fee Collection](#5-fee-collection)
-6. [Attendance Management](#6-attendance-management)
-7. [Teacher Management](#7-teacher-management)
-8. [Marks Entry](#8-marks-entry)
-9. [Report Generation](#9-report-generation)
-10. [CBC Assessment Records](#10-cbc-assessment-records)
-11. [System Settings](#11-system-settings)
-12. [Database Browser](#12-database-browser)
-13. [Backup & Restore](#13-backup--restore)
-14. [User Management](#14-user-management)
-15. [Troubleshooting](#15-troubleshooting)
+*This manual is designed for school administrators, teachers, clerks, and support staff. It assumes no prior IT knowledge and provides step-by-step practical examples for every daily school task.*
 
 ---
 
-## 1. GETTING STARTED
+## 📑 TABLE OF CONTENTS
 
-### System Requirements
-- **Microsoft Excel 2016** or later (Windows)
-- **Macros must be enabled** (the system runs on VBA)
-- Minimum 4GB RAM recommended
-- Screen resolution: 1366×768 or higher
-
-### First-Time Installation
-
-1. **Open** the file `MAGANA_CBC_SchoolMIS_Professional.xlsx` in Excel
-2. If prompted about macros, click **"Enable Content"**
-3. Press **Alt+F11** to open the VBA Editor
-4. Go to **Insert → Module**
-5. Open `SchoolSystem_AutoSetup.txt` in Notepad, **Select All (Ctrl+A)**, Copy **(Ctrl+C)**
-6. Click inside the new module in Excel VBA Editor
-7. **Paste (Ctrl+V)** all the code
-8. Press **Alt+F8**, select **`AutoSetup`**, click **Run**
-9. Wait for the "Setup complete!" message
-10. **Save As** → Choose **Excel Macro-Enabled Workbook (.xlsm)**
-11. **Close** and **reopen** the file
-12. The **Login screen** will appear automatically
-
-### Updating the System
-If you receive an updated `SchoolSystem_AutoSetup.txt`:
-1. Open the Excel file
-2. A backup prompt will appear — **click Yes** to create a safety copy
-3. AutoSetup will update all code while **preserving your data**
-
----
-
-## 2. LOGIN & SECURITY
-
-### Default Login Credentials
-
-| Username | Password | Role |
-|----------|----------|------|
-| `admin` | `admin123` | Administrator |
-| `teacher1` | `teach123` | Teacher |
-| `clerk` | `clerk123` | Clerk |
-| `viewer` | `view123` | Viewer |
-
-> ⚠️ **IMPORTANT**: Change the default admin password immediately after first login!
-
-### Changing Your Password
-1. From the Main Menu, click **the password option** or go to the user management
-2. Enter your current password
-3. Enter and confirm your new password
-4. Click **Change Password**
-
-### Roles & Permissions
-| Role | Can Do |
-|------|--------|
-| **Administrator** | Full access: all modules, user management, settings, backup |
-| **Teacher** | Marks entry, attendance, generate reports, view students |
-| **Clerk** | Fee collection, student admission, attendance |
-| **Viewer** | View-only access to reports and database |
+1. **[System Basics & Navigation](#1-system-basics--navigation)**
+   - Starting the System
+   - Logging In (Examples and Roles)
+   - The Main Dashboard
+2. **[Student Admission & Records](#2-student-admission--records)**
+   - Registering a New Learner (Step-by-Step)
+   - Searching for an Existing Learner
+   - Uploading Student Photos
+3. **[Fee Collection & Receipts](#3-fee-collection--receipts)**
+   - Recording a Fee Payment
+   - Handling Overpayments & Balances
+   - Printing Professional Receipts
+4. **[Daily Attendance Management](#4-daily-attendance-management)**
+   - Marking Morning Attendance
+5. **[Staff & Teacher Records](#5-staff--teacher-records)**
+   - Registering New Teachers
+6. **[Academic Administration (Marks Entry)](#6-academic-administration-marks-entry)**
+   - How to Enter Exam Scores
+   - Auto-Grading Explained (EE, ME, AE, BE)
+7. **[CBC Competency Assessments](#7-cbc-competency-assessments)**
+   - Assessing Core Competencies (Values & Skills)
+   - Recording Physical Attributes (Height/Weight/BMI)
+8. **[Generating Professional Reports](#8-generating-professional-reports)**
+   - Individual Learner Report Cards
+   - Class Assessment Spreadsheets
+   - Printing & Navigating Back to Dashboard
+9. **[System Settings & Database](#9-system-settings--database)**
+   - Changing School Information & Mottos
+   - Exporting Data to CSV (Flash disks)
+10. **[Data Security & Backups](#10-data-security--backups)**
+    - Manual and Automatic Backups
+    - Managing Users & Passwords
 
 ---
 
-## 3. MAIN MENU NAVIGATION
+## 1. SYSTEM BASICS & NAVIGATION
 
-After login, the **Main Menu** appears with these options:
+### Starting the System
+The system runs universally on Microsoft Excel but behaves like a standalone secure application.
+1. Open the file named `MAGANA_CBC_SchoolMIS_Professional.xlsm`.
+2. A yellow warning bar might appear at the top saying **"SECURITY WARNING Macros have been disabled"**. You MUST click the **Enable Content** button to start the software.
+3. The system will automatically launch in **Fullscreen Mode**, hiding normal Excel grids and menus so you can focus purely on school operations.
 
-| Button | Function | Description |
-|--------|----------|-------------|
-| 📋 **STUDENT ADMISSION** | Opens student registration form | Add, edit, search, delete students |
-| 💰 **FEE COLLECTION** | Opens fee management | Record payments, generate receipts |
-| ✅ **ATTENDANCE** | Opens daily attendance | Mark present/absent/sick/excused |
-| 👨‍🏫 **TEACHER MANAGEMENT** | Opens teacher records | Add, edit, delete teacher profiles |
-| 📊 **REPORT CENTER** | Opens all reports | 8 report types available |
-| 🗄️ **DATABASE** | Opens data browser | View and export any data table |
-| ⚙️ **SETTINGS** | Opens configuration | Streams, subjects, fees structure |
-| 📥 **CSV IMPORT** | Bulk import students | Upload student data from CSV files |
-| 📝 **MARKS ENTRY** | Opens marks grid | Enter scores by class and subject |
-| ❌ **EXIT** | Closes the menu | Returns to spreadsheet |
+### Logging In
+When the system opens, you will see a Login Screen.
 
-The **status panel** at the bottom shows live statistics:
-- Total active students
-- Today's attendance percentage
-- Fee collection summary
+**Example roles:**
+- **Clerk/Bursar**: Logs in to collect fees and print receipts. *(Username: clerk | Password: clerk123)*
+- **Teacher**: Logs in to enter marks and attendance. *(Username: teacher1 | Password: teach123)*
+- **Principal/Admin**: Logs in to view all financial/academic reports, manage users, and change settings. *(Username: admin | Password: admin123)*
 
----
+> 🔒 **Security Tip**: Never share your password. If a new teacher joins, ask the Admin to create a unique user account for them. Change default passwords immediately!
 
-## 4. STUDENT ADMISSION
+### Main Dashboard (Navigation Hub)
+After logging in, you will see the **Main Menu**. This is your control center. It is grouped logically into four colored sections:
+- **STUDENT MANAGEMENT** (Blue): Admissions, Attendance, CBC Assessments.
+- **ACADEMIC** (Green): Marks Entry, Report Center, Data Import.
+- **FINANCE & STAFF** (Dark Green): Fee Collection, Teachers/Staff, Database Browser.
+- **ADMINISTRATION** (Brown/Purple): System Settings, Backups, User Logins.
 
-### Adding a New Student
-1. Click **STUDENT ADMISSION** from the Main Menu
-2. Fill in the required fields:
-   - **Learner ID**: Auto-generated (S001, S002...)
-   - **Admission Number**: Enter the official admission number
-   - **First Name** and **Last Name**
-   - **Gender**: Select M or F
-   - **Date of Birth**: Format dd/mm/yyyy
-   - **Class**: Select from dropdown (PP1 to G9)
-   - **Stream**: Auto-populated based on class
-   - **Parent/Guardian Name** and **Phone Number**
-3. Optional fields: UPI, Birth Certificate, Blood Group, Allergies, Special Needs
-4. Click **📷 PHOTO** to browse and attach a passport photo
-5. Click **💾 SAVE** to register the student
-
-### Finding an Existing Student
-1. Type the **Admission Number** or **Name** in the search box
-2. Click **🔍 FIND**
-3. The form will populate with the student's data
-4. Make changes and click **🔄 UPDATE** to save
-
-### Deleting a Student
-1. Search for the student first
-2. Click **❌ DELETE**
-3. Confirm the deletion (this cannot be undone!)
-
-> 💡 **Tip**: Instead of deleting, change the student's **Status** to "Left" or "Graduated" to keep historical records.
+Simply click any button with a pointing arrow (e.g., `▶ Fee Collection`) to open that specific form.
 
 ---
 
-## 5. FEE COLLECTION
+## 2. STUDENT ADMISSION & RECORDS
 
-### Recording a Payment
-1. Click **FEE COLLECTION** from the Main Menu
-2. Enter the student's **Admission Number** — their name will auto-populate
-3. Select the **Fee Type** (Tuition, Activity, Lunch, Transport, etc.)
-4. Enter the **Amount Paid**
-5. Select the **Payment Mode** (Cash, M-Pesa, Bank Transfer)
-6. The **Receipt Number** is auto-generated
-7. The **Date** defaults to today
-8. Click **SAVE PAYMENT**
+Use this form when a new student joins the school, or to update an existing student's details (like a new phone number).
 
-### Generating a Fee Receipt
-1. After saving, click **PRINT RECEIPT**
-2. A professional A4 receipt is generated as PDF
-3. The PDF is saved to the `\Reports` folder
+### Example: Registering a New Learner
+*Scenario: A new student named John Doe is joining Grade 1 Stream A today.*
 
-### Viewing Payment History
-1. Enter the student's admission number
-2. Click **VIEW HISTORY**
-3. All previous payments will be listed
+1. Click **STUDENT ADMISSION** on the Main Menu.
+2. The **Learner ID** (e.g., S005) is automatically created by the system to ensure no duplicates.
+3. In **Adm No.**, type the school's official registry number (e.g., `ADM/2026/015`).
+4. Type `Doe` in **Surname** and `John` in **Other Names**.
+5. Pick his **Birth Date** from the calendar and select `Male` for **Gender**.
+6. Select `G1` for **Class Lvl** and `A` for **Stream**.
+7. Fill in the **Guardian Name** and **Phone** (This is crucial for emergencies and fee reminders).
+8. Click the green **✔️ SAVE** button at the bottom. The system will alert you: "Student saved successfully."
 
----
-
-## 6. ATTENDANCE MANAGEMENT
-
-### Marking Daily Attendance
-1. Click **ATTENDANCE** from the Main Menu
-2. Select the **Class** and **Date**
-3. Click **LOAD** to see all students in the class
-4. For each student, select status:
-   - ✅ **Present**
-   - ❌ **Absent**
-   - 🤒 **Sick**
-   - 📋 **Excused**
-5. Click **SAVE ATTENDANCE**
-
-### Viewing Attendance Records
-- Use the **Report Center → Attendance Summary** to view consolidated attendance statistics by class.
+### Uploading a Photo
+1. On the Admission Form, search for the student or fill in their new details.
+2. Click the **✏️ Upload Photo** button on the right side.
+3. Choose the student's passport-style picture from your computer. The photo will instantly appear in the picture box on the screen.
+4. Click **UPDATE** to permanently save the picture to their digital profile.
 
 ---
 
-## 7. TEACHER MANAGEMENT
+## 3. FEE COLLECTION & RECEIPTS
 
-### Adding a Teacher
-1. Click **TEACHER MANAGEMENT** from the Main Menu
-2. Fill in: Name, TSC Number, Phone, Email, Subject, Join Date
-3. Click **SAVE**
+The system ensures fee collection is accurate, receipted automatically, and mathematically flawless.
 
-### Editing/Deleting a Teacher
-1. Select the teacher from the list
-2. Modify fields and click **UPDATE**, or click **DELETE** to remove
+### Example: Recording a Fee Payment
+*Scenario: John's guardian pays KSh 2,500 for the Activity Fee via M-Pesa.*
 
----
+1. Click **FEE COLLECTION** from the Main Menu.
+2. Type John's Admission No. (`ADM/2026/015`).
+3. Click the orange **FIND STUDENT** button. John's full name will automatically appear.
+4. From the **Fee Type** dropdown, select `Activity Fee`. 
+   *(The system will automatically consult the Settings and show the exact amount due for Grade 1 Activity Fee).*
+5. In **Amount Paid**, type `2500`.
+   *(Notice the balance automatically drops as you type! If you accidentally type 3500 instead of 2500, the system will highlight the balance in red, warn you of an "OVERPAYMENT," and prevent errors).*
+6. Select `M-Pesa` under **Payment Mode**.
+7. Click the large green **✔️ COLLECT FEE** button. The payment is instantly recorded safely in the database.
 
-## 8. MARKS ENTRY
-
-### Entering Marks for a Class
-1. Click **MARKS ENTRY** from the Main Menu
-2. Select:
-   - **Class** (e.g., G1)
-   - **Stream** (e.g., A) — optional
-   - **Subject** (e.g., Mathematics)
-   - **Term** (Term 1, 2, or 3)
-   - **Year** (e.g., 2026)
-3. Click **LOAD CLASS** — all active students appear in a grid
-4. Enter **scores** in the textboxes next to each student name
-5. The **CBC grade** (EE1, ME2, etc.) auto-calculates as you type
-6. Click **💾 SAVE ALL MARKS**
-7. A summary shows how many marks were saved vs skipped
-
-### Grading Scale (CBC Kenya)
-| Score | Level | Meaning |
-|-------|-------|---------|
-| 90-100% | EE1 | Exceeding Expectations (Highest) |
-| 75-89% | EE2 | Exceeding Expectations |
-| 58-74% | ME1 | Meeting Expectations |
-| 41-57% | ME2 | Meeting Expectations |
-| 31-40% | AE1 | Approaching Expectations |
-| 21-30% | AE2 | Approaching Expectations |
-| 11-20% | BE1 | Below Expectations |
-| 0-10% | BE2 | Below Expectations (Lowest) |
-
-### Quick Report from Marks Form
-- Click **📊 CLASS REPORT** to generate a class assessment directly from the marks form
-- Click **📄 STUDENT REPORT** to generate an individual report card
+### Printing Professional Receipts
+After paying, click the brown **🖨️ PRINT LAST RECEIPT** button.
+A highly professional A4 receipt will be generated instantly as a PDF. It contains two copies per page:
+- **School Copy** (Top half - keep for records)
+- **Parent Copy** (Bottom half - cut and give to guardian)
+The receipt shows a complete financial breakdown of all fees the student owes, what they just paid, the receipt number, and their current outstanding balances.
 
 ---
 
-## 9. REPORT GENERATION
+## 4. DAILY ATTENDANCE MANAGEMENT
 
-### Accessing the Report Center
-1. Click **REPORT CENTER** from the Main Menu
-2. The Report Center shows **3 sections** with **8 report types**
+Attendance is tracked digitally to monitor school drop-out rates, health patterns, and Ministry of Education compliance.
 
-### Report Types
+### Marking Morning Attendance
+*Scenario: It is Monday morning, and you need to mark attendance for Grade 3.*
 
-#### 📄 REPORT CARDS
-| Report | What It Does |
-|--------|-------------|
-| **Single Report Card** | Generates one student's A4 CBC report card |
-| **Batch Report Cards** | Generates report cards for ALL students in a class (saved as PDF) |
-
-#### 📊 ACADEMIC REPORTS
-| Report | What It Does |
-|--------|-------------|
-| **Class Assessment** | Subject-by-subject breakdown for a class (shows every student's score per subject in a grid) |
-| **Class Performance** | Summary report showing each student's average, total, rank, and grade across all subjects |
-
-#### 📋 SYSTEM REPORTS
-| Report | What It Does |
-|--------|-------------|
-| **Class List** | Student roster for a class/stream (Name, Adm No, Gender, Status) |
-| **Attendance Summary** | Attendance statistics by class (Present/Absent/Sick counts) |
-| **Fee Arrears** | Students with outstanding fee balances |
-| **Population Count** | Enrollment statistics (Active, Left, Total by class) |
-
-### Generating a Single Report Card
-1. Click **Single Report Card**
-2. Enter the student's **Admission Number**
-3. Select **Term** and **Year**
-4. Click **Generate**
-5. The report card appears on a new sheet and can be exported to PDF
-
-### Generating Batch Report Cards
-1. Click **Batch Report Cards**
-2. Select **Class**, **Term**, and **Year**
-3. Click **Generate** — progress is shown in the status bar
-4. All PDFs are saved to the `\Reports` folder
-
-### Generating a Class Assessment
-1. Click **Class Assessment**
-2. Enter the **Class** (e.g., G1)
-3. Enter the **Term** (e.g., Term 1)
-4. Enter the **Year** (e.g., 2026)
-5. The report generates on the `Report_Class` sheet
-
-### Generating a Class Performance Report
-1. Click **Class Performance**
-2. Enter the **Class**, **Term**, and **Year** when prompted
-3. A summary table appears with student rankings
-
-### Navigating Back from Reports (Fullscreen Mode)
-The system runs in fullscreen/kiosk mode with all Excel menus hidden. When viewing any generated report, you have **4 ways** to return to the Dashboard:
-
-| Method | How |
-|--------|-----|
-| **◀ BACK Button** | Click the dark **"◀ BACK TO DASHBOARD"** button in the top-right corner of any report |
-| **ESC Key** | Press the **Escape** key on your keyboard |
-| **Ctrl+Home** | Press **Ctrl+Home** as an alternative shortcut |
-| **Right-Click** | Right-click anywhere on the report → select **"◀ Back to Dashboard"** from the context menu |
-
-> 💡 **Tip**: A small hint text below the back button reminds you: *"Press ESC or Ctrl+Home to return"*
+1. Click **DAILY ATTENDANCE** on the Main Menu.
+2. Select **Class**: `G3` and confirm the current **Date**.
+3. Click the purple **▶ LOAD LIST** button. Every student currently enrolled in Grade 3 will appear in the large white box.
+4. **Fast method:** If everyone is present, simply click the green **✔️ MARK ALL PRESENT** button. 
+5. **Marking absentees:** Find the specific student who is missing. Click their name in the list. Select `Absent` or `Sick` from the **Set Status** dropdown at the bottom, then click the purple **MARK SELECTED** button.
+6. When completely done, you MUST click the large green **SAVE ATTENDANCE** button at the very bottom to finalize the register.
 
 ---
 
-## 10. CBC ASSESSMENT RECORDS
+## 5. STAFF & TEACHER RECORDS
 
-### Recording Competency Skills
-1. Open the **CBC Assessment** form from the Marks Entry area
-2. Select the student, term, and year
-3. Rate each competency area on a 1-5 scale:
-   - Communication & Collaboration
-   - Critical Thinking & Problem Solving
-   - Creativity & Imagination
-   - Citizenship
-   - Digital Literacy
-   - Learning to Learn
-   - Self-efficacy
-4. Click **SAVE**
+Keep a secure digital database of all teaching personnel.
 
-### Recording Physical Health Data
-1. Open the **Physical Entry** form
-2. Enter: Height (cm), Weight (kg)
-3. BMI is auto-calculated
-4. Click **SAVE**
+1. Click **STAFF RECORDS** on the Main Menu.
+2. To add a newly hired teacher, fill in their Full Name, TSC Number, Phone Number, and assign them an Email and primary Subject area.
+3. Select their **Staff Type** (e.g., Permanent, Contract, or BOG).
+4. Click **SAVE**. You can update their details anytime if their phone number changes.
 
 ---
 
-## 11. SYSTEM SETTINGS
+## 6. ACADEMIC ADMINISTRATION (MARKS ENTRY)
 
-### Managing Streams
-1. Click **SETTINGS** from the Main Menu
-2. Go to the **Streams** tab
-3. Add new streams (e.g., "C") or remove unused ones
+This module handles traditional exam scoring smoothly.
 
-### Managing Subjects
-1. Go to the **Subjects** tab
-2. Add subjects with: Name, Level (Lower Primary/Upper Primary/Junior Sec), Max Marks
+### How to Enter Exam Scores
+*Scenario: Entering Mathematics scores for Grade 4 at the end of Term 1.*
 
-### Managing Fee Structure
-1. Go to the **Fees** tab
-2. Add fee types with amounts
-3. These appear in the Fee Collection dropdown
+1. Click **ENTER MARKS** from the Main Menu.
+2. Select Class (`G4`), Subject (`Mathematics`), Term (`Term 1`), and Year (`2026`).
+3. Click **LOAD CLASS**. A grid will perfectly list all Grade 4 students.
+4. Type the raw score (out of 100) in the box next to each student's name.
+5. As you type a number, the system **instantly calculates the CBC Grade** (e.g., EE1, ME2) based on the Ministry of Education's strict CBC guidelines.
+6. Click **💾 SAVE ALL MARKS**.
 
----
-
-## 12. DATABASE BROWSER
-
-### Browsing Data
-1. Click **DATABASE** from the Main Menu
-2. Select a **table** from the dropdown (e.g., DB_Students, DB_Marks)
-3. Click **LOAD TABLE DATA**
-4. Data appears in a scrollable list (use mouse wheel to scroll)
-
-### Exporting to CSV
-1. Load a table
-2. Click **EXPORT TO CSV**
-3. Choose a save location
-4. The data is exported as a `.csv` file for use in other programs
+### The Grading Scale Explained
+The system removes human calculation errors by grading automatically:
+- **90 - 100%**: EE1 (Exceeding Expectations - Outstanding)
+- **75 - 89%**: EE2 (Exceeding Expectations)
+- **58 - 74%**: ME1 (Meeting Expectations - Good)
+- **41 - 57%**: ME2 (Meeting Expectations)
+- **31 - 40%**: AE1 (Approaching Expectations - Average)
+- **21 - 30%**: AE2 (Approaching Expectations)
+- **11 - 20%**: BE1 (Below Expectations - Needs Help)
+- **0 - 10%**: BE2 (Below Expectations - Critical)
 
 ---
 
-## 13. BACKUP & RESTORE
+## 7. CBC COMPETENCY ASSESSMENTS
 
-### Creating a Backup
-1. Click **SETTINGS** → **Backup** (or access from the Backup form)
-2. Choose **Full Backup** (all data) or **Partial Backup** (selected sheets)
-3. Click **CREATE BACKUP**
-4. The backup is saved to `\Backups` folder with a timestamp
+In addition to academic marks, the CBC curriculum requires tracking a child's character, physical growth, and core values.
 
-### Restoring from Backup
-1. Open the Backup form
-2. Click **RESTORE**
-3. Select the backup file
-4. Confirm the restore operation
+### Assessing Core Competencies
+1. Click **CBC ASSESSMENT** on the Main Menu.
+2. Select a student and the current term.
+3. You will see skills like *Digital Literacy*, *Creativity & Imagination*, and *Citizenship*.
+4. Rate the child from 1 to 5 based on their actual observable ability (1 being low struggle, 5 being excellent mastery).
 
-> ⚠️ **WARNING**: Restoring will overwrite current data!
-
-### Recommended Backup Schedule
-| Frequency | Type | When |
-|-----------|------|------|
-| **Daily** | Full Backup | End of each school day |
-| **Weekly** | Copy to USB | Every Friday |
-| **Termly** | Archive copy | End of each term |
+### Recording Physical Health
+1. In the same CBC Assessment area, switch to the **Physical Entry** tab at the top.
+2. Type the child's **Height** (in cm) and **Weight** (in kg).
+3. The system instantly calculates their **BMI (Body Mass Index)**. This helps the school track child nourishment and healthy growth trajectories over the years!
 
 ---
 
-## 14. USER MANAGEMENT
+## 8. GENERATING PROFESSIONAL REPORTS
 
-### Adding a New User (Admin Only)
-1. Click **User Management** (accessible to admins)
-2. Click **Add New User**
-3. Enter: Username, Password, Role
-4. Click **SAVE**
+The system automatically designs beautiful reports ready for parent review. You do not need to format any Excel cells manually!
 
-### Editing a User
-1. Select the user from the list
-2. Modify role or reset password
-3. Click **UPDATE**
+### Individual Learner Report Cards
+1. Click **REPORTS CENTER** on the Main Menu.
+2. Click **Single Report Card** under the blue Academic section.
+3. Type the learner's Admission Number.
+4. Click **Generate**.
+5. The system will create a stunning digital report card. It seamlessly merges their academic marks, attendance percentage, physical BMI, and teacher's CBC skill assessments into one unified, printable document. 
 
-### Deleting a User
-1. Select the user
-2. Click **DELETE**
-3. Confirm deletion
+### Class Assessment Spreadsheets
+If a teacher wants to see how the whole class performed at a glance:
+1. Go to **REPORTS CENTER** → **Class Assessment**.
+2. Select the class (e.g., G6).
+3. The system generates a wide landscape document showing every single student's score in every subject, their Total Points, Average %, and Class Rank.
+4. **Professional Output:** The subject column names are printed vertically (sideways) so that all 10+ subjects fit perfectly on one A4 paper when printed, without cutting off!
 
----
-
-## 15. TROUBLESHOOTING
-
-### Common Issues
-
-| Problem | Solution |
-|---------|----------|
-| **"Macros have been disabled"** | File → Options → Trust Center → Trust Center Settings → Enable all macros |
-| **Login screen doesn't appear** | Close and reopen the file, or press `Alt+F8` → `ShowMainMenu` |
-| **"Sub or Function not defined"** | Re-run AutoSetup: `Alt+F8` → `AutoSetup` |
-| **Report shows no data** | Ensure marks have been entered for the selected Term and Year |
-| **"Run-time error 9: Subscript out of range"** | A required sheet is missing; re-run AutoSetup |
-| **"Permission denied" on save** | Close any other programs that have the file open |
-| **Photos not showing** | Ensure photos are in the same folder as the workbook, or update paths |
-| **Slow performance** | Close other Excel workbooks; reduce number of open applications |
-| **Stuck on report sheet (fullscreen)** | Press **ESC** or **Ctrl+Home**, click the **◀ BACK TO DASHBOARD** button, or right-click → **Back to Dashboard** |
-
-### Getting Help
-- Check the `DB_SystemLogs` sheet for error details
-- The audit log records all system activities with timestamps
-- Contact your system administrator for user account issues
-
-### Emergency Recovery
-If the system becomes unresponsive:
-1. Press **Ctrl+Break** to stop VBA execution
-2. Press **Alt+F11** to open VBA Editor
-3. Click **Reset** (square stop button)
-4. Close VBA Editor
-5. Save the file
-6. If data is corrupted, restore from the latest backup in `\Backups`
+### Returning to the Dashboard from a Generated Report
+When viewing a generated report, the screen represents a printable A4 page in Fullscreen. 
+To go back to the menus, do one of the following:
+- Click the dark **◀ BACK TO DASHBOARD** button situated in the top right corner.
+- Press **ESCAPE (Esc)** on your computer keyboard.
+- Press **Ctrl + Home** on your computer keyboard.
+- Right-click your mouse anywhere on the white paper and select **◀ Back to Dashboard**.
 
 ---
 
-## 📊 QUICK REFERENCE CARD
+## 9. SYSTEM SETTINGS & DATABASE
 
-### Keyboard Shortcuts
-| Shortcut | Action |
-|----------|--------|
-| `Alt+F8` → `ShowMainMenu` | Open the Main Menu |
-| `Alt+F8` → `SeedTestData` | Load 20 test students (first-time only) |
-| `Alt+F11` | Open VBA Editor |
-| `Ctrl+S` | Save the workbook |
-| `Esc` | Close active form / **Return to Dashboard from reports** |
-| `Ctrl+Home` | **Return to Dashboard from any report sheet** |
-| `Right-click` | Context menu includes **"◀ Back to Dashboard"** on reports |
+### Changing School Information
+If the school changes its phone number or motto, you don't need to call an IT expert to change the code:
+1. Click **SYSTEM SETTINGS** (Admin Only).
+2. Go to the **School Info** tab.
+3. Update the School Name, Motto, Postal Address, or Phone Number here.
+4. Click Save. These changes will instantly update the letterheads on all newly printed Report Cards and Fee Receipts!
 
-### File Locations
-| Item | Location |
-|------|----------|
-| Main workbook | `MAGANA_CBC_SchoolMIS_Professional.xlsm` |
-| PDF Reports | `\Reports\` folder (same directory) |
-| Backups | `\Backups\` folder (same directory) |
-| CSV Exports | User-selected location |
-
-### CBC Class Structure
-| Level | Classes | Subjects |
-|-------|---------|----------|
-| Pre-Primary | PP1, PP2 | 5 subjects |
-| Lower Primary | G1, G2, G3 | 8 subjects |
-| Upper Primary | G4, G5, G6 | 10 subjects |
-| Junior Secondary | G7, G8, G9 | 11 subjects |
+### Exporting Data to CSV (Flash Disks)
+Sometimes the Ministry of Education requests student data.
+1. Click **DATABASE BROWSER** on the Main Menu.
+2. Load the `DB_Students` table.
+3. Click the orange **EXPORT TO CSV** button.
+4. Choose to save it to your Flash Disk or Desktop. You now have a clean file you can email or print externally!
 
 ---
 
-*Manual Version 2.0 | Magana CBC School Management Information System*
-*Generated: 24-Feb-2026*
+## 10. DATA SECURITY & BACKUPS
+
+Data loss (like a broken laptop) can be catastrophic for a school. This system protects you automatically.
+
+### Automatic Backups
+Whenever you use the system, it quietly saves itself. It automatically creates a `Backups` folder on your computer and safely stores locked copies of all your student and financial data in case of emergency.
+
+### Manual Backups
+If you are about to make big changes (like importing 100 new students) or closing the system for the term, force a manual backup:
+1. Click **BACKUP MANAGER** on the Main Menu (Admin Only).
+2. Click **CREATE BACKUP NOW**.
+3. We highly recommend copying the `Backups` folder to a Flash Disk (USB Drive) every Friday for extreme safety against laptop theft.
+
+### Managing Passwords
+If a teacher forgets their login password:
+1. The Admin logs in and clicks **USER MANAGEMENT**.
+2. Select the teacher's profile from the list.
+3. Type a new temporary password (e.g., `1234`) and give it to the teacher. They can log in and change it to a secret password later.
+
+---
+*End of Manual. Designed for the MAGANA CBC School Management System.*
