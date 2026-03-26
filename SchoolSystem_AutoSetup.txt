@@ -3174,10 +3174,10 @@ Private Sub CreateLoginForm()
     d.Controls("lblLogo").Font.Name = "Segoe UI": d.Controls("lblLogo").TextAlign = 2
     d.Controls("lblLogo").BackStyle = 0
     
-    ' Logo Image (hidden by default)
+    ' Logo Image (hidden by default - shown when logo is uploaded)
     Dim imgLogo As Object: Set imgLogo = d.Controls.Add("Forms.Image.1", "imgLogo")
-    imgLogo.Left = 90: imgLogo.Top = 80: imgLogo.Width = 80: imgLogo.Height = 80
-    imgLogo.PictureSizeMode = 1 ' fmPictureSizeModeStretch
+    imgLogo.Left = 70: imgLogo.Top = 55: imgLogo.Width = 120: imgLogo.Height = 120
+    imgLogo.PictureSizeMode = 3 ' fmPictureSizeModeZoom (maintains aspect ratio)
     imgLogo.BorderStyle = 0: imgLogo.BackStyle = 0: imgLogo.Visible = False
     
     ' School motto on left panel (placeholder - updated by Initialize)
