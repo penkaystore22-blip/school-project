@@ -668,6 +668,7 @@ Private Sub CreateMainMenu()
     Dim c$: c = "Option Explicit" & vbCrLf
     c = c & "Private Sub UserForm_Initialize()" & vbCrLf
     c = c & "  Call CenterForm(Me)" & vbCrLf
+    c = c & "  On Error GoTo 0" & vbCrLf
     c = c & "  If Not CheckLicenseOrActivate() Then Unload Me: Exit Sub" & vbCrLf
     c = c & "End Sub" & vbCrLf
     c = c & "Private Sub btnAdm_Click():      frmAdmission.Show:     End Sub" & vbCrLf
