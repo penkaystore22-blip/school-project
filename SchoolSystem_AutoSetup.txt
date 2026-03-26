@@ -3671,14 +3671,23 @@ Private Sub CreateModDashboard()
     c = c & "  Dim logoSz As Single: logoSz = hdrH - 10" & vbCrLf
     c = c & "  Set shp = ws.Shapes.AddShape(9, 12, 5, logoSz, logoSz)" & vbCrLf
     c = c & "  shp.Fill.ForeColor.RGB = RGB(0, 150, 136): shp.Line.ForeColor.RGB = RGB(255, 215, 0): shp.Line.Weight = 2" & vbCrLf
-    c = c & "  shp.TextFrame.Characters.Text = ChrW(9733) & vbLf & ""MPS""" & vbCrLf
+    c = c & "  Dim schNmD As String: schNmD = ReadSetting(""SCHOOL_NAME"")" & vbCrLf
+    c = c & "  If schNmD = """" Then schNmD = ""CBC MIS""" & vbCrLf
+    c = c & "  Dim logoInit As String: logoInit = """"" & vbCrLf
+    c = c & "  Dim wParts() As String: wParts = Split(schNmD, "" "")" & vbCrLf
+    c = c & "  Dim wp As Long" & vbCrLf
+    c = c & "  For wp = 0 To UBound(wParts)" & vbCrLf
+    c = c & "    If Len(wParts(wp)) > 0 Then logoInit = logoInit & Left(wParts(wp), 1)" & vbCrLf
+    c = c & "  Next wp" & vbCrLf
+    c = c & "  If Len(logoInit) > 3 Then logoInit = Left(logoInit, 3)" & vbCrLf
+    c = c & "  shp.TextFrame.Characters.Text = ChrW(9733) & vbLf & logoInit" & vbCrLf
     c = c & "  shp.TextFrame.Characters.Font.Color = vbWhite: shp.TextFrame.Characters.Font.Bold = True" & vbCrLf
     c = c & "  shp.TextFrame.Characters.Font.Size = Int(10 * vFac): If shp.TextFrame.Characters.Font.Size < 8 Then shp.TextFrame.Characters.Font.Size = 8" & vbCrLf
     c = c & "  shp.TextFrame.HorizontalAlignment = xlCenter: shp.TextFrame.VerticalAlignment = xlVAlignCenter" & vbCrLf
     c = c & "  shp.TextFrame.MarginTop = 0: shp.TextFrame.MarginBottom = 0: shp.Placement = 3" & vbCrLf
     c = c & "  Dim titL As Single: titL = logoSz + 24" & vbCrLf
     c = c & "  Set shp = ws.Shapes.AddTextbox(1, titL, 4, 500, 24)" & vbCrLf
-    c = c & "  shp.TextFrame.Characters.Text = ChrW(9733) & ""  MAGANA PRIMARY SCHOOL  |  CBC MANAGEMENT SYSTEM""" & vbCrLf
+    c = c & "  shp.TextFrame.Characters.Text = ChrW(9733) & ""  "" & UCase(schNmD) & ""  |  CBC MANAGEMENT SYSTEM""" & vbCrLf
     c = c & "  shp.TextFrame.Characters.Font.Color = vbWhite: shp.TextFrame.Characters.Font.Bold = True" & vbCrLf
     c = c & "  shp.TextFrame.Characters.Font.Size = Int(14 * vFac): If shp.TextFrame.Characters.Font.Size < 10 Then shp.TextFrame.Characters.Font.Size = 10" & vbCrLf
     c = c & "  shp.TextFrame.Characters.Font.Name = ""Segoe UI""" & vbCrLf
@@ -10411,7 +10420,8 @@ Private Sub CreateModSettings()
     c = c & "  If frm.Controls(""cmbTerm"").ListIndex >= 0 Then Call WriteSetting(""CURRENT_TERM"", frm.Controls(""cmbTerm"").Value)" & vbCrLf
     c = c & "  Call AuditLog(""Settings"", ""School info updated: "" & frm.Controls(""txtSchoolName"").Value)" & vbCrLf
     c = c & "  Call AutoSaveWorkbook" & vbCrLf
-    c = c & "  MsgBox ""School information saved successfully!"" & vbLf & vbLf & ""All reports and receipts will now use the updated details."", vbInformation, ""Settings Saved""" & vbCrLf
+    c = c & "  Call BuildDashboard" & vbCrLf
+    c = c & "  MsgBox ""School information saved successfully!"" & vbLf & vbLf & ""All reports, receipts, and dashboard will now use the updated details."", vbInformation, ""Settings Saved""" & vbCrLf
     c = c & "End Sub" & vbCrLf
 
     ' =============================
@@ -10972,6 +10982,7 @@ Private Sub CreateModLicense()
     c = c & "    Call WriteSetting(""SCHOOL_NAME"", Trim(schoolName))" & vbCrLf
     c = c & "    Call AuditLog(""License"", ""System activated for: "" & schoolName & "" on machine "" & machID)" & vbCrLf
     c = c & "    MsgBox ""System activated successfully!"" & vbLf & vbLf & ""Licensed to: "" & schoolName & vbLf & ""Machine: "" & machID, vbInformation, ""Activation Successful""" & vbCrLf
+    c = c & "    Call AutoSaveWorkbook" & vbCrLf
     c = c & "    ActivateLicense = True" & vbCrLf
     c = c & "  Else" & vbCrLf
     c = c & "    MsgBox ""Invalid activation key!"" & vbLf & vbLf & ""Please verify:"" & vbLf & ""1. The key was generated for THIS computer"" & vbLf & ""2. The school name matches exactly"" & vbLf & vbLf & ""Contact your developer for assistance."", vbCritical, ""Activation Failed""" & vbCrLf
@@ -11010,73 +11021,77 @@ End Sub
 '  FORM: frmActivation — Machine-Locked Activation UI
 ' =============================================================
 Private Sub CreateLicenseForm()
-    Dim f As Object: Set f = AddForm("frmActivation", "System Activation", 440, 380)
+    Dim f As Object: Set f = AddForm("frmActivation", "System Activation", 390, 310)
     Dim d As Object: Set d = f.Designer
-    f.Properties("BackColor") = &HFFFFFF
+    f.Properties("BackColor") = &HF8F9FA
 
-    ' === HEADER BAR ===
-    AL d, "lblTitle", ChrW(9906) & "  SYSTEM ACTIVATION", 0, 0, 440, 32, 12
+    ' === HEADER BAR (compact dark slate — full width) ===
+    AL d, "lblTitle", ChrW(9899) & "  SYSTEM ACTIVATION", 0, 0, 390, 26, 10
     d.Controls("lblTitle").Font.Bold = True: d.Controls("lblTitle").ForeColor = &HFFFFFF
-    d.Controls("lblTitle").BackColor = &HC62828: d.Controls("lblTitle").TextAlign = 2
+    d.Controls("lblTitle").BackColor = &H2D3436: d.Controls("lblTitle").TextAlign = 2
     d.Controls("lblTitle").Font.Name = "Segoe UI"
-    AL d, "lblAcc", "", 0, 32, 440, 3
+    AL d, "lblAcc", "", 0, 26, 390, 2
     d.Controls("lblAcc").BackColor = &HD4A537: d.Controls("lblAcc").Caption = ""
 
-    ' === Info text ===
-    AL d, "lblInfo", "This system requires activation. Send the Machine ID below to your developer to receive an activation key.", 20, 44, 400, 30, 8
-    d.Controls("lblInfo").ForeColor = &H666666: d.Controls("lblInfo").Font.Italic = True
+    ' === Info text (20px margins) ===
+    AL d, "lblInfo", "Send the Machine ID to your developer to receive an activation key.", 20, 36, 350, 14, 7
+    d.Controls("lblInfo").ForeColor = &H888888: d.Controls("lblInfo").Font.Name = "Segoe UI"
 
-    ' === Machine ID (read-only, prominent) ===
-    AL d, "lblMIDLbl", "Your Machine ID:", 20, 82, 120, 16, 9
+    ' === Machine ID row (label + textbox + copy btn inline) ===
+    AL d, "lblMIDLbl", "Machine ID:", 20, 56, 64, 14, 8
     d.Controls("lblMIDLbl").Font.Bold = True: d.Controls("lblMIDLbl").ForeColor = &H333333
+    d.Controls("lblMIDLbl").Font.Name = "Segoe UI"
 
     Dim ctl As Object
     Set ctl = d.Controls.Add("Forms.TextBox.1", "txtMachineID")
-    ctl.Left = 20: ctl.Top = 100: ctl.Width = 400: ctl.Height = 28
-    ctl.Font.Size = 14: ctl.Font.Bold = True: ctl.Font.Name = "Consolas"
+    ctl.Left = 88: ctl.Top = 54: ctl.Width = 212: ctl.Height = 20
+    ctl.Font.Size = 9: ctl.Font.Bold = True: ctl.Font.Name = "Consolas"
     ctl.TextAlign = 2: ctl.Locked = True
-    ctl.BackColor = &HF0F4F8: ctl.ForeColor = &HC62828
+    ctl.BackColor = &HFFFFFF: ctl.ForeColor = &HC62828
+    ctl.BorderStyle = 1
 
-    ' === Copy ID button ===
-    AB d, "btnCopy", ChrW(9733) & " COPY ID", 320, 135, 100, 22, &H455A64, &HFFFFFF
-    d.Controls("btnCopy").Font.Size = 8
+    AB d, "btnCopy", ChrW(9733) & " COPY", 306, 54, 64, 20, &H455A64, &HFFFFFF
+    d.Controls("btnCopy").Font.Size = 7: d.Controls("btnCopy").Font.Name = "Segoe UI"
 
-    ' === Divider ===
-    AL d, "lblDiv", "", 20, 165, 400, 1
-    d.Controls("lblDiv").BackColor = &HD0D0D0
+    ' === Thin divider ===
+    AL d, "lblDiv", "", 20, 82, 350, 1
+    d.Controls("lblDiv").BackColor = &HE0E0E0
 
-    ' === School Name ===
-    AL d, "lblSchLbl", "School Name (as licensed):", 20, 178, 200, 16, 9
+    ' === School Name (compact) ===
+    AL d, "lblSchLbl", "School Name (as licensed):", 20, 90, 170, 14, 8
     d.Controls("lblSchLbl").Font.Bold = True: d.Controls("lblSchLbl").ForeColor = &H333333
+    d.Controls("lblSchLbl").Font.Name = "Segoe UI"
     Set ctl = d.Controls.Add("Forms.TextBox.1", "txtSchoolName")
-    ctl.Left = 20: ctl.Top = 196: ctl.Width = 400: ctl.Height = 24
-    ctl.Font.Size = 10: ctl.Font.Name = "Segoe UI"
+    ctl.Left = 20: ctl.Top = 106: ctl.Width = 350: ctl.Height = 20
+    ctl.Font.Size = 9: ctl.Font.Name = "Segoe UI"
+    ctl.BorderStyle = 1
 
-    ' === Activation Key ===
-    AL d, "lblKeyLbl", "Activation Key:", 20, 230, 200, 16, 9
+    ' === Activation Key (compact) ===
+    AL d, "lblKeyLbl", "Activation Key:", 20, 134, 120, 14, 8
     d.Controls("lblKeyLbl").Font.Bold = True: d.Controls("lblKeyLbl").ForeColor = &H333333
+    d.Controls("lblKeyLbl").Font.Name = "Segoe UI"
     Set ctl = d.Controls.Add("Forms.TextBox.1", "txtKey")
-    ctl.Left = 20: ctl.Top = 248: ctl.Width = 400: ctl.Height = 28
-    ctl.Font.Size = 12: ctl.Font.Bold = True: ctl.Font.Name = "Consolas"
-    ctl.TextAlign = 2
+    ctl.Left = 20: ctl.Top = 150: ctl.Width = 350: ctl.Height = 22
+    ctl.Font.Size = 10: ctl.Font.Bold = True: ctl.Font.Name = "Consolas"
+    ctl.TextAlign = 2: ctl.BorderStyle = 1
 
-    ' === Buttons ===
-    AB d, "btnActivate", ChrW(10003) & "  ACTIVATE SYSTEM", 20, 295, 260, 36, &H2E7D32, &HFFFFFF
-    d.Controls("btnActivate").Font.Size = 11: d.Controls("btnActivate").Font.Bold = True
-    AB d, "btnExit", "EXIT", 300, 295, 120, 36, &H757575, &HFFFFFF
-    d.Controls("btnExit").Font.Size = 10
+    ' === Buttons (side by side, 20px margins) ===
+    AB d, "btnActivate", ChrW(10003) & " ACTIVATE", 20, 184, 216, 30, &H2E7D32, &HFFFFFF
+    d.Controls("btnActivate").Font.Size = 10: d.Controls("btnActivate").Font.Bold = True
+    d.Controls("btnActivate").Font.Name = "Segoe UI"
+    AB d, "btnExit", "EXIT", 244, 184, 126, 30, &H757575, &HFFFFFF
+    d.Controls("btnExit").Font.Size = 9: d.Controls("btnExit").Font.Name = "Segoe UI"
 
-    ' === Status ===
-    AL d, "lblSt", " Enter your activation key to unlock the system.", 20, 345, 400, 18, 8
-    d.Controls("lblSt").BackColor = &HF5F5F5: d.Controls("lblSt").BorderStyle = 1
-    d.Controls("lblSt").ForeColor = &H666666
+    ' === Status bar (20px margins) ===
+    AL d, "lblSt", " Enter activation key to unlock.", 20, 224, 350, 14, 7
+    d.Controls("lblSt").BackColor = &HFFFFFF: d.Controls("lblSt").BorderStyle = 1
+    d.Controls("lblSt").ForeColor = &H888888: d.Controls("lblSt").Font.Name = "Segoe UI"
 
     ' --- Form code ---
     Dim c$: c = "Option Explicit" & vbCrLf & vbCrLf
     c = c & "Private Sub UserForm_Initialize()" & vbCrLf
     c = c & "  Call CenterForm(Me)" & vbCrLf
     c = c & "  Me.Controls(""txtMachineID"").Value = GetMachineID()" & vbCrLf
-    c = c & "  ' Pre-fill school name from settings if available" & vbCrLf
     c = c & "  Dim sn As String: sn = ReadSetting(""SCHOOL_NAME"")" & vbCrLf
     c = c & "  If sn <> """" Then Me.Controls(""txtSchoolName"").Value = sn" & vbCrLf
     c = c & "End Sub" & vbCrLf & vbCrLf
@@ -11084,7 +11099,7 @@ Private Sub CreateLicenseForm()
     c = c & "Private Sub btnCopy_Click()" & vbCrLf
     c = c & "  Dim d As Object: Set d = CreateObject(""New:{1C3B4210-F441-11CE-B9EA-00AA006B1A69}"")" & vbCrLf
     c = c & "  d.SetText Me.Controls(""txtMachineID"").Value: d.PutInClipboard" & vbCrLf
-    c = c & "  Me.Controls(""lblSt"").Caption = "" "" & ChrW(10003) & "" Machine ID copied to clipboard!""" & vbCrLf
+    c = c & "  Me.Controls(""lblSt"").Caption = "" "" & ChrW(10003) & "" Machine ID copied!""" & vbCrLf
     c = c & "End Sub" & vbCrLf & vbCrLf
 
     c = c & "Private Sub btnActivate_Click()" & vbCrLf
