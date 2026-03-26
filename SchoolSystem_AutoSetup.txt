@@ -198,8 +198,10 @@ Public Sub ProtectVBAProject()
     On Error GoTo PErr
     If vbProj Is Nothing Then
         MsgBox "Cannot access VBA Project." & vbLf & vbLf & _
-               "Please enable: File > Options > Trust Center > Trust Center Settings" & vbLf & _
-               "> Macro Settings > Check 'Trust access to the VBA project object model'", _
+               "Please enable:" & vbLf & _
+               "  File > Options > Trust Center > Trust Center Settings" & vbLf & _
+               "  > Macro Settings > Check 'Trust access to the VBA project object model'" & vbLf & vbLf & _
+               "Then close and reopen Excel and try again.", _
                vbCritical, "Access Denied"
         Exit Sub
     End If
@@ -235,55 +237,123 @@ Public Sub ProtectVBAProject()
     ' --- Use VBE SendKeys to set protection ---
     Application.ScreenUpdating = False
     
-    ' Open VBA Editor
+    ' Open VBA Editor and ensure it has focus
     Dim vbe As Object: Set vbe = Application.VBE
     vbe.MainWindow.Visible = True
+    DoEvents
+    Application.Wait Now + TimeValue("00:00:02")
     
     ' Select this project
     Set vbProj = ThisWorkbook.VBProject
+    On Error Resume Next
     vbe.ActiveVBProject = vbProj
+    On Error GoTo PErr
+    DoEvents
+    Application.Wait Now + TimeValue("00:00:01")
     
-    ' Open project properties dialog via menu
-    ' Tools > VBAProject Properties = CommandBar ID 2578
+    ' --- Try to open VBA Project Properties dialog ---
+    ' Method 1: Try via CommandBars on the VBE "Menu Bar"
     Dim ctrl As Object
-    Set ctrl = vbe.CommandBars(1).FindControl(ID:=2578, Recursive:=True)
-    If ctrl Is Nothing Then
-        MsgBox "Could not find VBA Project Properties command. Please lock manually:" & vbLf & _
-               "VBA Editor > Tools > VBAProject Properties > Protection tab", vbExclamation
-        vbe.MainWindow.Visible = False
-        Application.ScreenUpdating = True
-        Exit Sub
+    Dim menuBar As Object
+    
+    On Error Resume Next
+    ' Try the VBE Menu Bar first
+    Set menuBar = vbe.CommandBars("Menu Bar")
+    If Not menuBar Is Nothing Then
+        Set ctrl = menuBar.FindControl(ID:=2578, Recursive:=True)
     End If
     
-    ctrl.Execute
+    ' Fallback: try CommandBars(1)
+    If ctrl Is Nothing Then
+        Set ctrl = vbe.CommandBars(1).FindControl(ID:=2578, Recursive:=True)
+    End If
+    On Error GoTo PErr
+    
+    If ctrl Is Nothing Then
+        ' Method 2: Use SendKeys to open Tools menu directly
+        ' Alt+T opens Tools menu in VBE, then E for Properties
+        AppActivate Application.VBE.MainWindow.caption
+        DoEvents
+        Application.Wait Now + TimeValue("00:00:01")
+        
+        SendKeys "%t", True    ' Alt+T = Tools menu
+        DoEvents
+        Application.Wait Now + TimeValue("00:00:01")
+        SendKeys "e", True     ' E = VBAProject Properties
+        DoEvents
+        Application.Wait Now + TimeValue("00:00:02")
+    Else
+        ' Ensure VBE window is active before executing
+        On Error Resume Next
+        AppActivate Application.VBE.MainWindow.caption
+        On Error GoTo PErr
+        DoEvents
+        Application.Wait Now + TimeValue("00:00:01")
+        
+        ctrl.Execute
+        DoEvents
+        Application.Wait Now + TimeValue("00:00:02")
+    End If
+    
+    ' --- Navigate to Protection tab ---
+    ' The Properties dialog has 2 tabs: General and Protection
+    ' Use Ctrl+Tab or click Protection tab
+    SendKeys "^{TAB}", True      ' Ctrl+Tab to Protection tab
     DoEvents
     Application.Wait Now + TimeValue("00:00:01")
     
-    ' Navigate Protection tab and fill fields
-    ' Tab to Protection tab
-    SendKeys "^{TAB}", True      ' Ctrl+Tab to Protection page
+    ' Toggle "Lock project for viewing" checkbox
+    SendKeys " ", True
     DoEvents
     Application.Wait Now + TimeValue("00:00:01")
     
-    SendKeys " ", True           ' Toggle "Lock project for viewing" checkbox
+    ' Move to Password field and type password
+    SendKeys "{TAB}", True
     DoEvents
-    SendKeys "{TAB}", True       ' Move to Password field
-    SendKeys pwd, True           ' Type password
-    SendKeys "{TAB}", True       ' Move to Confirm Password field
-    SendKeys pwd, True           ' Type password again
-    SendKeys "{ENTER}", True     ' Click OK
+    SendKeys pwd, True
     DoEvents
+    
+    ' Move to Confirm Password field and type password
+    SendKeys "{TAB}", True
+    DoEvents
+    SendKeys pwd, True
+    DoEvents
+    Application.Wait Now + TimeValue("00:00:01")
+    
+    ' Click OK
+    SendKeys "{ENTER}", True
+    DoEvents
+    Application.Wait Now + TimeValue("00:00:02")
     
     ' Close VBA Editor
-    Application.Wait Now + TimeValue("00:00:01")
+    On Error Resume Next
     vbe.MainWindow.Visible = False
+    On Error GoTo 0
     Application.ScreenUpdating = True
     
-    MsgBox "VBA Project Protected Successfully!" & vbLf & vbLf & _
-           "Your code is now locked. No one can view or edit it without the password." & vbLf & vbLf & _
-           "IMPORTANT: Save the workbook (Ctrl+S) to preserve the protection." & vbLf & vbLf & _
-           "To unlock for updates: Alt+F8 > UnprotectVBAProject > Run", _
-           vbInformation, "Code Protected"
+    ' Verify protection was applied
+    On Error Resume Next
+    Dim protCheck As Long
+    protCheck = ThisWorkbook.VBProject.Protection
+    On Error GoTo 0
+    
+    If protCheck = 1 Then
+        MsgBox "VBA Project Protected Successfully!" & vbLf & vbLf & _
+               "Your code is now locked. No one can view or edit it without the password." & vbLf & vbLf & _
+               "IMPORTANT: Save the workbook (Ctrl+S) to preserve the protection." & vbLf & vbLf & _
+               "To unlock for updates: Alt+F8 > UnprotectVBAProject > Run", _
+               vbInformation, "Code Protected"
+    Else
+        MsgBox "Protection may not have been applied correctly." & vbLf & vbLf & _
+               "Please verify manually:" & vbLf & _
+               "1. Press Alt+F11 to open VBA Editor" & vbLf & _
+               "2. Go to Tools > VBAProject Properties" & vbLf & _
+               "3. Click the Protection tab" & vbLf & _
+               "4. Check 'Lock project for viewing'" & vbLf & _
+               "5. Enter your password in both fields" & vbLf & _
+               "6. Click OK and save the workbook", _
+               vbExclamation, "Verify Protection"
+    End If
     Exit Sub
 
 PErr:
@@ -292,9 +362,15 @@ PErr:
     Application.ScreenUpdating = True
     On Error GoTo 0
     MsgBox "Protection Error: " & Err.Description & vbLf & vbLf & _
-           "Manual method: Open VBA Editor (Alt+F11)" & vbLf & _
-           "Tools > VBAProject Properties > Protection tab" & vbLf & _
-           "Check 'Lock project for viewing' and set password.", _
+           "This usually happens when Excel blocks VBA project access." & vbLf & vbLf & _
+           "FIX: Enable 'Trust access to the VBA project object model':" & vbLf & _
+           "  File > Options > Trust Center > Trust Center Settings" & vbLf & _
+           "  > Macro Settings > Check the box" & vbLf & vbLf & _
+           "OR use the manual method:" & vbLf & _
+           "  1. Press Alt+F11 to open VBA Editor" & vbLf & _
+           "  2. Go to Tools > VBAProject Properties > Protection tab" & vbLf & _
+           "  3. Check 'Lock project for viewing' and set password" & vbLf & _
+           "  4. Click OK and save (Ctrl+S)", _
            vbCritical, "Protection Error"
 End Sub
 
@@ -464,6 +540,8 @@ Private Sub SeedDefaultSettings()
     ws.Cells(8, 1) = "SCHOOL_ADDRESS": ws.Cells(8, 2) = "P.O. Box 100, Kenya":   ws.Cells(8, 3) = "School postal address for official documents"
     ws.Cells(9, 1) = "SCHOOL_PHONE":   ws.Cells(9, 2) = "0700-000-000":          ws.Cells(9, 3) = "School phone number"
     ws.Cells(10, 1) = "SCHOOL_EMAIL":  ws.Cells(10, 2) = "info@magana.ac.ke":    ws.Cells(10, 3) = "School email address"
+    ws.Cells(11, 1) = "SCHOOL_LOGO_PATH": ws.Cells(11, 2) = "":                  ws.Cells(11, 3) = "File name of the uploaded system logo (MUST reside in same folder)"
+    ws.Cells(12, 1) = "SCHOOL_LOGO_BMP":  ws.Cells(12, 2) = "":                  ws.Cells(12, 3) = "Auto-generated BMP version of the logo for Login form display"
 End Sub
 
 ' =============================================================
@@ -3090,19 +3168,25 @@ Private Sub CreateLoginForm()
     cir.Left = 90: cir.Top = 80: cir.Width = 80: cir.Height = 80
     cir.BackColor = &H7B9B3C: cir.Caption = ""  ' Rich green RGB(60,155,123)
     
-    ' Shield icon + school initials
-    AL d, "lblLogo", ChrW(9670) & vbCrLf & "MPS", 92, 88, 76, 68, 14
+    ' Shield icon + school initials (placeholder - updated by Initialize)
+    AL d, "lblLogo", ChrW(9670) & vbCrLf & "...", 92, 88, 76, 68, 14
     d.Controls("lblLogo").ForeColor = &HFFFFFF: d.Controls("lblLogo").Font.Bold = True
     d.Controls("lblLogo").Font.Name = "Segoe UI": d.Controls("lblLogo").TextAlign = 2
     d.Controls("lblLogo").BackStyle = 0
     
-    ' School motto on left panel
-    AL d, "lblMotto", "Excellence in Education", 55, 175, 150, 14, 8
+    ' Logo Image (hidden by default)
+    Dim imgLogo As Object: Set imgLogo = d.Controls.Add("Forms.Image.1", "imgLogo")
+    imgLogo.Left = 90: imgLogo.Top = 80: imgLogo.Width = 80: imgLogo.Height = 80
+    imgLogo.PictureSizeMode = 1 ' fmPictureSizeModeStretch
+    imgLogo.BorderStyle = 0: imgLogo.BackStyle = 0: imgLogo.Visible = False
+    
+    ' School motto on left panel (placeholder - updated by Initialize)
+    AL d, "lblMotto", "...", 55, 175, 150, 14, 8
     d.Controls("lblMotto").ForeColor = &HDBC8A0: d.Controls("lblMotto").Font.Name = "Segoe UI"
     d.Controls("lblMotto").TextAlign = 2: d.Controls("lblMotto").BackStyle = 0: d.Controls("lblMotto").Font.Italic = True
     
-    ' === RIGHT PANEL TITLE ===
-    AL d, "lblSchName", "MAGANA PRIMARY SCHOOL", 230, 55, 260, 20, 12
+    ' === RIGHT PANEL TITLE (placeholder - updated by Initialize) ===
+    AL d, "lblSchName", "Loading...", 230, 55, 260, 20, 12
     d.Controls("lblSchName").ForeColor = &H704010: d.Controls("lblSchName").Font.Bold = True
     d.Controls("lblSchName").Font.Name = "Segoe UI": d.Controls("lblSchName").TextAlign = 2: d.Controls("lblSchName").BackStyle = 0
     
@@ -3154,6 +3238,73 @@ Private Sub CreateLoginForm()
     Dim c$: c = "Option Explicit" & vbCrLf
     c = c & "Private Sub UserForm_Initialize()" & vbCrLf
     c = c & "  Call CenterForm(Me)" & vbCrLf
+    c = c & "  ' --- Dynamically load school name, initials, and motto from DB_Settings ---" & vbCrLf
+    c = c & "  On Error Resume Next" & vbCrLf
+    c = c & "  Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets(""DB_Settings"")" & vbCrLf
+    c = c & "  If Not ws Is Nothing Then" & vbCrLf
+    c = c & "    Dim i As Long, sName As String, sMotto As String, sLogo As String" & vbCrLf
+    c = c & "    For i = 2 To ws.Cells(ws.Rows.Count, 1).End(xlUp).Row" & vbCrLf
+    c = c & "      Select Case UCase(CStr(ws.Cells(i, 1).Value))" & vbCrLf
+    c = c & "        Case ""SCHOOL_NAME"": sName = CStr(ws.Cells(i, 2).Value)" & vbCrLf
+    c = c & "        Case ""SCHOOL_MOTTO"": sMotto = CStr(ws.Cells(i, 2).Value)" & vbCrLf
+    c = c & "        Case ""SCHOOL_LOGO_PATH"": sLogo = CStr(ws.Cells(i, 2).Value)" & vbCrLf
+    c = c & "      End Select" & vbCrLf
+    c = c & "    Next i" & vbCrLf
+    c = c & "    ' --- Update school name label ---" & vbCrLf
+    c = c & "    If sName <> """" Then Me.Controls(""lblSchName"").Caption = UCase(sName)" & vbCrLf
+    c = c & "    ' --- Try to load school logo ---" & vbCrLf
+    c = c & "    Dim hasLogo As Boolean: hasLogo = False" & vbCrLf
+    c = c & "    ' First try the BMP version (best for LoadPicture)" & vbCrLf
+    c = c & "    Dim bmpFile As String: bmpFile = """"" & vbCrLf
+    c = c & "    For i = 2 To ws.Cells(ws.Rows.Count, 1).End(xlUp).Row" & vbCrLf
+    c = c & "      If UCase(CStr(ws.Cells(i, 1).Value)) = ""SCHOOL_LOGO_BMP"" Then bmpFile = CStr(ws.Cells(i, 2).Value)" & vbCrLf
+    c = c & "    Next i" & vbCrLf
+    c = c & "    Dim tryPath As String" & vbCrLf
+    c = c & "    ' Try BMP first" & vbCrLf
+    c = c & "    If bmpFile <> """" Then" & vbCrLf
+    c = c & "      tryPath = ThisWorkbook.Path & ""\"" & bmpFile" & vbCrLf
+    c = c & "      If Dir(tryPath) <> """" Then" & vbCrLf
+    c = c & "        Err.Clear" & vbCrLf
+    c = c & "        Me.Controls(""imgLogo"").Picture = LoadPicture(tryPath)" & vbCrLf
+    c = c & "        If Err.Number = 0 Then" & vbCrLf
+    c = c & "          Me.Controls(""imgLogo"").Visible = True" & vbCrLf
+    c = c & "          Me.Controls(""lblCircle"").Visible = False" & vbCrLf
+    c = c & "          Me.Controls(""lblLogo"").Visible = False" & vbCrLf
+    c = c & "          hasLogo = True" & vbCrLf
+    c = c & "        End If" & vbCrLf
+    c = c & "        Err.Clear" & vbCrLf
+    c = c & "      End If" & vbCrLf
+    c = c & "    End If" & vbCrLf
+    c = c & "    ' Fallback: try original file (JPG/BMP work, PNG may not)" & vbCrLf
+    c = c & "    If Not hasLogo And sLogo <> """" Then" & vbCrLf
+    c = c & "      tryPath = ThisWorkbook.Path & ""\"" & sLogo" & vbCrLf
+    c = c & "      If Dir(tryPath) <> """" Then" & vbCrLf
+    c = c & "        Err.Clear" & vbCrLf
+    c = c & "        Me.Controls(""imgLogo"").Picture = LoadPicture(tryPath)" & vbCrLf
+    c = c & "        If Err.Number = 0 Then" & vbCrLf
+    c = c & "          Me.Controls(""imgLogo"").Visible = True" & vbCrLf
+    c = c & "          Me.Controls(""lblCircle"").Visible = False" & vbCrLf
+    c = c & "          Me.Controls(""lblLogo"").Visible = False" & vbCrLf
+    c = c & "          hasLogo = True" & vbCrLf
+    c = c & "        End If" & vbCrLf
+    c = c & "        Err.Clear" & vbCrLf
+    c = c & "      End If" & vbCrLf
+    c = c & "    End If" & vbCrLf
+    c = c & "    ' --- Fallback: generate initials ---" & vbCrLf
+    c = c & "    If Not hasLogo And sName <> """" Then" & vbCrLf
+    c = c & "      Dim initials As String: initials = """"" & vbCrLf
+    c = c & "      Dim parts() As String: parts = Split(Trim(sName), "" "")" & vbCrLf
+    c = c & "      Dim p As Long" & vbCrLf
+    c = c & "      For p = LBound(parts) To UBound(parts)" & vbCrLf
+    c = c & "        If Len(parts(p)) > 0 Then initials = initials & UCase(Left(parts(p), 1))" & vbCrLf
+    c = c & "      Next p" & vbCrLf
+    c = c & "      If Len(initials) > 4 Then initials = Left(initials, 4)" & vbCrLf
+    c = c & "      Me.Controls(""lblLogo"").Caption = ChrW(9670) & vbCrLf & initials" & vbCrLf
+    c = c & "    End If" & vbCrLf
+    c = c & "    ' --- Update motto label ---" & vbCrLf
+    c = c & "    If sMotto <> """" Then Me.Controls(""lblMotto"").Caption = sMotto" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  On Error GoTo 0" & vbCrLf
     c = c & "End Sub" & vbCrLf
     c = c & "Private Sub txtUser_Enter()" & vbCrLf
     c = c & "  If Me.Controls(""txtUser"").Value = ""Enter username"" Then" & vbCrLf
@@ -3496,6 +3647,21 @@ Private Sub CreateModSecurity()
     c = c & "  End If" & vbCrLf
     c = c & "  On Error Resume Next: bg.Unprotect ""MIS2026"": bg.Unprotect: On Error GoTo 0" & vbCrLf
     c = c & "  ' --- Paint the background ---" & vbCrLf
+    c = c & "  ' Read school name + subtitle dynamically" & vbCrLf
+    c = c & "  Dim bgSchName As String: bgSchName = ""CBC MIS""" & vbCrLf
+    c = c & "  Dim bgSubTitle As String: bgSubTitle = ""CBC School Management Information System""" & vbCrLf
+    c = c & "  On Error Resume Next" & vbCrLf
+    c = c & "  Dim stWs As Worksheet: Set stWs = ThisWorkbook.Sheets(""DB_Settings"")" & vbCrLf
+    c = c & "  If Not stWs Is Nothing Then" & vbCrLf
+    c = c & "    Dim bgI As Long" & vbCrLf
+    c = c & "    For bgI = 2 To stWs.Cells(stWs.Rows.Count, 1).End(xlUp).Row" & vbCrLf
+    c = c & "      Select Case UCase(CStr(stWs.Cells(bgI, 1).Value))" & vbCrLf
+    c = c & "        Case ""SCHOOL_NAME"": If Len(Trim(CStr(stWs.Cells(bgI, 2).Value))) > 0 Then bgSchName = Trim(CStr(stWs.Cells(bgI, 2).Value))" & vbCrLf
+    c = c & "        Case ""SCHOOL_MOTTO"": If Len(Trim(CStr(stWs.Cells(bgI, 2).Value))) > 0 Then bgSubTitle = Trim(CStr(stWs.Cells(bgI, 2).Value))" & vbCrLf
+    c = c & "      End Select" & vbCrLf
+    c = c & "    Next bgI" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  On Error Resume Next" & vbCrLf
     c = c & "  With bg" & vbCrLf
     c = c & "    On Error Resume Next" & vbCrLf
     c = c & "    .Visible = xlSheetVisible" & vbCrLf
@@ -3506,8 +3672,8 @@ Private Sub CreateModSecurity()
     c = c & "    .Rows(""5:9"").Interior.Color  = RGB(215, 228, 245)" & vbCrLf
     c = c & "    ' Slightly deeper accent rows 18-22" & vbCrLf
     c = c & "    .Rows(""18:22"").Interior.Color = RGB(185, 205, 228)" & vbCrLf
-    c = c & "    ' Watermark text (centered)" & vbCrLf
-    c = c & "    .Range(""A13""  ).Value = ""CBC MIS""" & vbCrLf
+    c = c & "    ' Watermark text (centered) — uses dynamic school name" & vbCrLf
+    c = c & "    .Range(""A13"").Value = UCase(bgSchName)" & vbCrLf
     c = c & "    With .Range(""A13"")" & vbCrLf
     c = c & "      .Font.Name  = ""Segoe UI Light""" & vbCrLf
     c = c & "      .Font.Size  = 36" & vbCrLf
@@ -3515,7 +3681,7 @@ Private Sub CreateModSecurity()
     c = c & "      .Font.Color = RGB(30, 65, 120)" & vbCrLf
     c = c & "      .Font.Italic = False" & vbCrLf
     c = c & "    End With" & vbCrLf
-    c = c & "    .Range(""A14"").Value = ""CBC School Management Information System""" & vbCrLf
+    c = c & "    .Range(""A14"").Value = bgSubTitle" & vbCrLf
     c = c & "    With .Range(""A14"")" & vbCrLf
     c = c & "      .Font.Name  = ""Segoe UI""" & vbCrLf
     c = c & "      .Font.Size  = 12" & vbCrLf
@@ -3669,22 +3835,32 @@ Private Sub CreateModDashboard()
     c = c & "  ' --- School Logo/Crest ---" & vbCrLf
     c = c & "  On Error Resume Next" & vbCrLf
     c = c & "  Dim logoSz As Single: logoSz = hdrH - 10" & vbCrLf
-    c = c & "  Set shp = ws.Shapes.AddShape(9, 12, 5, logoSz, logoSz)" & vbCrLf
-    c = c & "  shp.Fill.ForeColor.RGB = RGB(0, 150, 136): shp.Line.ForeColor.RGB = RGB(255, 215, 0): shp.Line.Weight = 2" & vbCrLf
     c = c & "  Dim schNmD As String: schNmD = ReadSetting(""SCHOOL_NAME"")" & vbCrLf
     c = c & "  If schNmD = """" Then schNmD = ""CBC MIS""" & vbCrLf
-    c = c & "  Dim logoInit As String: logoInit = """"" & vbCrLf
-    c = c & "  Dim wParts() As String: wParts = Split(schNmD, "" "")" & vbCrLf
-    c = c & "  Dim wp As Long" & vbCrLf
-    c = c & "  For wp = 0 To UBound(wParts)" & vbCrLf
-    c = c & "    If Len(wParts(wp)) > 0 Then logoInit = logoInit & Left(wParts(wp), 1)" & vbCrLf
-    c = c & "  Next wp" & vbCrLf
-    c = c & "  If Len(logoInit) > 3 Then logoInit = Left(logoInit, 3)" & vbCrLf
-    c = c & "  shp.TextFrame.Characters.Text = ChrW(9733) & vbLf & logoInit" & vbCrLf
-    c = c & "  shp.TextFrame.Characters.Font.Color = vbWhite: shp.TextFrame.Characters.Font.Bold = True" & vbCrLf
-    c = c & "  shp.TextFrame.Characters.Font.Size = Int(10 * vFac): If shp.TextFrame.Characters.Font.Size < 8 Then shp.TextFrame.Characters.Font.Size = 8" & vbCrLf
-    c = c & "  shp.TextFrame.HorizontalAlignment = xlCenter: shp.TextFrame.VerticalAlignment = xlVAlignCenter" & vbCrLf
-    c = c & "  shp.TextFrame.MarginTop = 0: shp.TextFrame.MarginBottom = 0: shp.Placement = 3" & vbCrLf
+    c = c & "  Dim sLogoD As String: sLogoD = ReadSetting(""SCHOOL_LOGO_PATH"")" & vbCrLf
+    c = c & "  Dim hasDLogo As Boolean: hasDLogo = False" & vbCrLf
+    c = c & "  If sLogoD <> """" Then" & vbCrLf
+    c = c & "    Dim lgPath As String: lgPath = ThisWorkbook.Path & ""\"" & sLogoD" & vbCrLf
+    c = c & "    If Dir(lgPath) <> """" Then" & vbCrLf
+    c = c & "      Set shp = ws.Shapes.AddPicture(lgPath, msoFalse, msoTrue, 12, 5, logoSz, logoSz)" & vbCrLf
+    c = c & "      hasDLogo = True" & vbCrLf
+    c = c & "    End If" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  If Not hasDLogo Then" & vbCrLf
+    c = c & "    Set shp = ws.Shapes.AddShape(9, 12, 5, logoSz, logoSz)" & vbCrLf
+    c = c & "    shp.Fill.ForeColor.RGB = RGB(0, 150, 136): shp.Line.ForeColor.RGB = RGB(255, 215, 0): shp.Line.Weight = 2" & vbCrLf
+    c = c & "    Dim logoInit As String: logoInit = """"" & vbCrLf
+    c = c & "    Dim wParts() As String: wParts = Split(schNmD, "" "")" & vbCrLf
+    c = c & "    Dim wp As Long: For wp = 0 To UBound(wParts)" & vbCrLf
+    c = c & "      If Len(wParts(wp)) > 0 Then logoInit = logoInit & Left(wParts(wp), 1)" & vbCrLf
+    c = c & "    Next wp" & vbCrLf
+    c = c & "    If Len(logoInit) > 3 Then logoInit = Left(logoInit, 3)" & vbCrLf
+    c = c & "    shp.TextFrame.Characters.Text = ChrW(9733) & vbLf & logoInit" & vbCrLf
+    c = c & "    shp.TextFrame.Characters.Font.Color = vbWhite: shp.TextFrame.Characters.Font.Bold = True" & vbCrLf
+    c = c & "    shp.TextFrame.Characters.Font.Size = Int(10 * vFac): If shp.TextFrame.Characters.Font.Size < 8 Then shp.TextFrame.Characters.Font.Size = 8" & vbCrLf
+    c = c & "    shp.TextFrame.HorizontalAlignment = xlCenter: shp.TextFrame.VerticalAlignment = xlVAlignCenter" & vbCrLf
+    c = c & "    shp.TextFrame.MarginTop = 0: shp.TextFrame.MarginBottom = 0: shp.Placement = 3" & vbCrLf
+    c = c & "  End If" & vbCrLf
     c = c & "  Dim titL As Single: titL = logoSz + 24" & vbCrLf
     c = c & "  Set shp = ws.Shapes.AddTextbox(1, titL, 4, 500, 24)" & vbCrLf
     c = c & "  shp.TextFrame.Characters.Text = ChrW(9733) & ""  "" & UCase(schNmD) & ""  |  CBC MANAGEMENT SYSTEM""" & vbCrLf
@@ -4400,7 +4576,7 @@ Private Sub CreateModClassReport()
     c = c & "  Dim stW As Worksheet: Set stW = ThisWorkbook.Sheets(S_SETT)" & vbCrLf
     c = c & "  Dim si As Long" & vbCrLf
     c = c & "  For si = 2 To stW.Cells(stW.Rows.Count, 1).End(xlUp).Row" & vbCrLf
-    c = c & "    If CStr(stW.Cells(si, 1).Value) = ""SchoolName"" And Len(Trim(CStr(stW.Cells(si, 2).Value))) > 0 Then" & vbCrLf
+    c = c & "    If UCase(CStr(stW.Cells(si, 1).Value)) = ""SCHOOL_NAME"" And Len(Trim(CStr(stW.Cells(si, 2).Value))) > 0 Then" & vbCrLf
     c = c & "      schoolName = CStr(stW.Cells(si, 2).Value): Exit For" & vbCrLf
     c = c & "    End If" & vbCrLf
     c = c & "  Next si" & vbCrLf
@@ -4422,6 +4598,14 @@ Private Sub CreateModClassReport()
     c = c & "  ws.Cells(1, 1).Font.Color = RGB(255, 255, 255)" & vbCrLf
     c = c & "  ws.Range(ws.Cells(2, 1), ws.Cells(2, hdrCol)).Interior.Color = RGB(60, 155, 123)" & vbCrLf
     c = c & "  ws.Cells(2, 1).Font.Color = RGB(255, 255, 255)" & vbCrLf
+    c = c & "  ' --- Insert School Logo if available ---" & vbCrLf
+    c = c & "  Dim rLogo As String: rLogo = ReadSetting(""SCHOOL_LOGO_PATH"")" & vbCrLf
+    c = c & "  If rLogo <> """" Then" & vbCrLf
+    c = c & "    Dim rLP As String: rLP = ThisWorkbook.Path & ""\"" & rLogo" & vbCrLf
+    c = c & "    If Dir(rLP) <> """" Then" & vbCrLf
+    c = c & "      ws.Shapes.AddPicture rLP, msoFalse, msoTrue, 2, 2, 40, 40" & vbCrLf
+    c = c & "    End If" & vbCrLf
+    c = c & "  End If" & vbCrLf
     c = c & "  ' --- COLUMN HEADERS (Row 5) ---" & vbCrLf
     c = c & "  Dim hR As Long: hR = 5" & vbCrLf
     c = c & "  ws.Cells(hR, 1).Value = ""#"": ws.Cells(hR, 2).Value = ""Adm No""" & vbCrLf
@@ -5772,6 +5956,14 @@ Private Sub CreateModReportCards()
     c = c & "  tmp.Range(""A2:G2"").Merge: tmp.Cells(2,1).Value = UCase(schN)" & vbCrLf
     c = c & "  tmp.Cells(2,1).Font.Size = 14: tmp.Cells(2,1).Font.Bold = True: tmp.Cells(2,1).HorizontalAlignment = xlCenter" & vbCrLf
     c = c & "  tmp.Cells(2,1).Interior.Color = HDR_CLR: tmp.Cells(2,1).Font.Color = vbWhite: tmp.Rows(2).RowHeight = 22" & vbCrLf
+    c = c & "  ' --- Insert School Logo if available ---" & vbCrLf
+    c = c & "  Dim rcLogo As String: rcLogo = ReadSetting(""SCHOOL_LOGO_PATH"")" & vbCrLf
+    c = c & "  If rcLogo <> """" Then" & vbCrLf
+    c = c & "    Dim rcLP As String: rcLP = ThisWorkbook.Path & ""\"" & rcLogo" & vbCrLf
+    c = c & "    If Dir(rcLP) <> """" Then" & vbCrLf
+    c = c & "      tmp.Shapes.AddPicture rcLP, msoFalse, msoTrue, 2, tmp.Cells(2,1).Top + 1, 20, 20" & vbCrLf
+    c = c & "    End If" & vbCrLf
+    c = c & "  End If" & vbCrLf
     c = c & "  Dim mottoLine As String: mottoLine = """"" & vbCrLf
     c = c & "  If schM <> """" Then mottoLine = ""Motto: "" & schM" & vbCrLf
     c = c & "  If schA <> """" Then: If mottoLine <> """" Then mottoLine = mottoLine & ""  |  "": mottoLine = mottoLine & schA" & vbCrLf
@@ -8613,6 +8805,14 @@ Private Sub CreateModReceipts()
     c = c & "    .Interior.Color = RGB(27, 94, 32): .Font.Color = RGB(255, 255, 255)" & vbCrLf
     c = c & "  End With" & vbCrLf
     c = c & "  ws.Rows(r).RowHeight = 28: r = r + 1" & vbCrLf
+    c = c & "  ' --- Insert Logo on Receipt if available ---" & vbCrLf
+    c = c & "  Dim rpLogo As String: rpLogo = ReadSetting(""SCHOOL_LOGO_PATH"")" & vbCrLf
+    c = c & "  If rpLogo <> """" Then" & vbCrLf
+    c = c & "    Dim rpLP As String: rpLP = ThisWorkbook.Path & ""\"" & rpLogo" & vbCrLf
+    c = c & "    If Dir(rpLP) <> """" Then" & vbCrLf
+    c = c & "      ws.Shapes.AddPicture rpLP, msoFalse, msoTrue, ws.Cells(startRow, c1).Left + 2, ws.Cells(startRow, c1).Top + 2, 24, 24" & vbCrLf
+    c = c & "    End If" & vbCrLf
+    c = c & "  End If" & vbCrLf
     c = c & "  ' --- R2: Address | Phone | Email ---" & vbCrLf
     c = c & "  ws.Range(ws.Cells(r, c1), ws.Cells(r, c4)).Merge" & vbCrLf
     c = c & "  Dim infoL As String: infoL = """"" & vbCrLf
@@ -10660,7 +10860,7 @@ End Sub
 '  FORM: frmSettings — Admin Config Panel (Merged: Old + School Info)
 ' =============================================================
 Private Sub CreateSettingsForm()
-    Dim f As Object: Set f = AddForm("frmSettings", "System Settings | Magana MIS", 580, 580)
+    Dim f As Object: Set f = AddForm("frmSettings", "System Settings | CBC School MIS", 580, 580)
     Dim d As Object: Set d = f.Designer
     f.Properties("BackColor") = &HFFFFFF
     
@@ -10707,6 +10907,7 @@ Private Sub CreateSettingsForm()
     Set ctl = d.Controls("fraSchoolInfo").Controls.Add("Forms.TextBox.1", "txtYear")
     ctl.Left = 164: ctl.Top = 62: ctl.Width = 55: ctl.Height = 18: ctl.Font.Size = 8
     ABF d, "fraSchoolInfo", "btnSaveInfo", ChrW(10003) & " SAVE SCHOOL INFO", 298, 60, 160, 24, &H2E7D32, vbWhite
+    ABF d, "fraSchoolInfo", "btnUploadLogo", ChrW(11014) & " UPLOAD LOGO", 465, 60, 85, 24, &H6A1B9A, vbWhite
     
     ' --- SECTION 1: STREAMS (Left Panel — OLD restored) ---
     Dim frS As Object: Set frS = d.Controls.Add("Forms.Frame.1", "fraStreams")
@@ -10802,6 +11003,45 @@ Private Sub CreateSettingsForm()
     c = c & "Private Sub cmbFeeCls_Change(): Call LoadFees(Me): End Sub" & vbCrLf
     ' School Info (NEW)
     c = c & "Private Sub btnSaveInfo_Click(): Call SaveSchoolInfo(Me): End Sub" & vbCrLf
+    c = c & "Private Sub btnUploadLogo_Click()" & vbCrLf
+    c = c & "  On Error GoTo hE" & vbCrLf
+    c = c & "  Dim fd As Object: Set fd = Application.FileDialog(3)" & vbCrLf
+    c = c & "  fd.Title = ""Select School Logo"": fd.Filters.Clear" & vbCrLf
+    c = c & "  fd.Filters.Add ""Images"", ""*.jpg; *.jpeg; *.png; *.bmp; *.gif"": fd.AllowMultiSelect = False" & vbCrLf
+    c = c & "  If fd.Show = -1 Then" & vbCrLf
+    c = c & "    Dim sel As String: sel = fd.SelectedItems(1)" & vbCrLf
+    c = c & "    Dim ext As String: ext = LCase(Mid(sel, InStrRev(sel, ""."")))" & vbCrLf
+    c = c & "    ' --- Copy original file for reports (AddPicture supports all formats) ---" & vbCrLf
+    c = c & "    Dim origName As String: origName = ""SchoolLogo"" & ext" & vbCrLf
+    c = c & "    On Error Resume Next: Kill ThisWorkbook.Path & ""\"" & origName: On Error GoTo hE" & vbCrLf
+    c = c & "    FileCopy sel, ThisWorkbook.Path & ""\"" & origName" & vbCrLf
+    c = c & "    Call WriteSetting(""SCHOOL_LOGO_PATH"", origName)" & vbCrLf
+    c = c & "    ' --- Convert to JPG for Login form LoadPicture ---" & vbCrLf
+    c = c & "    Dim jpgName As String: jpgName = ""SchoolLogo_form.jpg""" & vbCrLf
+    c = c & "    Dim jpgPath As String: jpgPath = ThisWorkbook.Path & ""\"" & jpgName" & vbCrLf
+    c = c & "    On Error Resume Next: Kill jpgPath: On Error GoTo hE" & vbCrLf
+    c = c & "    If ext = "".jpg"" Or ext = "".jpeg"" Or ext = "".bmp"" Then" & vbCrLf
+    c = c & "      ' JPG/BMP already supported by LoadPicture — just copy" & vbCrLf
+    c = c & "      FileCopy sel, jpgPath" & vbCrLf
+    c = c & "      Call WriteSetting(""SCHOOL_LOGO_BMP"", jpgName)" & vbCrLf
+    c = c & "    Else" & vbCrLf
+    c = c & "      ' Use WIA.ImageFile to convert PNG/GIF to JPG" & vbCrLf
+    c = c & "      Dim wImg As Object: Set wImg = CreateObject(""WIA.ImageFile"")" & vbCrLf
+    c = c & "      wImg.LoadFile sel" & vbCrLf
+    c = c & "      Dim wProc As Object: Set wProc = CreateObject(""WIA.ImageProcess"")" & vbCrLf
+    c = c & "      wProc.Filters.Add wProc.FilterInfos(""Convert"").FilterID" & vbCrLf
+    c = c & "      wProc.Filters(1).Properties(""FormatID"").Value = ""{B96B3CAE-0728-11D3-9D7B-0000F81EF32E}""" & vbCrLf
+    c = c & "      wProc.Filters(1).Properties(""Quality"").Value = 95" & vbCrLf
+    c = c & "      Dim wOut As Object: Set wOut = wProc.Apply(wImg)" & vbCrLf
+    c = c & "      wOut.SaveFile jpgPath" & vbCrLf
+    c = c & "      Call WriteSetting(""SCHOOL_LOGO_BMP"", jpgName)" & vbCrLf
+    c = c & "    End If" & vbCrLf
+    c = c & "    MsgBox ""Logo uploaded successfully!"" & vbLf & ""Close and re-open the workbook to see it on the Login page."", vbInformation" & vbCrLf
+    c = c & "  End If" & vbCrLf
+    c = c & "  Exit Sub" & vbCrLf
+    c = c & "hE:" & vbCrLf
+    c = c & "  MsgBox ""Error uploading logo: "" & Err.Description, vbExclamation" & vbCrLf
+    c = c & "End Sub" & vbCrLf
     ' Streams (OLD)
     c = c & "Private Sub btnAddStr_Click(): Call AddStream(Me): End Sub" & vbCrLf
     c = c & "Private Sub btnEditStr_Click(): Call EditStream(Me): End Sub" & vbCrLf
