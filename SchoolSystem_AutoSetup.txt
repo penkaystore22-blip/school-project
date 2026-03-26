@@ -666,11 +666,7 @@ Private Sub CreateMainMenu()
     
     ' --- UserForm code ---
     Dim c$: c = "Option Explicit" & vbCrLf
-    c = c & "Private Sub UserForm_Initialize()" & vbCrLf
-    c = c & "  Call CenterForm(Me)" & vbCrLf
-    c = c & "  On Error GoTo 0" & vbCrLf
-    c = c & "  If Not CheckLicenseOrActivate() Then Unload Me: Exit Sub" & vbCrLf
-    c = c & "End Sub" & vbCrLf
+    c = c & "Private Sub UserForm_Initialize(): Call CenterForm(Me): End Sub" & vbCrLf
     c = c & "Private Sub btnAdm_Click():      frmAdmission.Show:     End Sub" & vbCrLf
     c = c & "Private Sub btnFee_Click():      frmFees.Show:          End Sub" & vbCrLf
     c = c & "Private Sub btnAtt_Click():      frmAttendance.Show:    End Sub" & vbCrLf
@@ -3257,6 +3253,7 @@ Private Sub CreateModSecurity()
     c = c & "        If mustChg Then" & vbCrLf
     c = c & "          Call ForceChangePassword(user, i)" & vbCrLf
     c = c & "        Else" & vbCrLf
+    c = c & "          If Not CheckLicenseOrActivate() Then Exit Sub" & vbCrLf
     c = c & "          Call BuildDashboard" & vbCrLf
     c = c & "        End If" & vbCrLf
     c = c & "        Exit Sub" & vbCrLf
