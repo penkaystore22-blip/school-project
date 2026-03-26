@@ -11017,7 +11017,7 @@ Private Sub CreateLicenseForm()
     f.Properties("BackColor") = &HFFFFFF
 
     ' === HEADER BAR ===
-    AL d, "lblTitle", ChrW(128274) & "  SYSTEM ACTIVATION", 0, 0, 440, 32, 12
+    AL d, "lblTitle", ChrW(9906) & "  SYSTEM ACTIVATION", 0, 0, 440, 32, 12
     d.Controls("lblTitle").Font.Bold = True: d.Controls("lblTitle").ForeColor = &HFFFFFF
     d.Controls("lblTitle").BackColor = &HC62828: d.Controls("lblTitle").TextAlign = 2
     d.Controls("lblTitle").Font.Name = "Segoe UI"
@@ -11040,7 +11040,7 @@ Private Sub CreateLicenseForm()
     ctl.BackColor = &HF0F4F8: ctl.ForeColor = &HC62828
 
     ' === Copy ID button ===
-    AB d, "btnCopy", ChrW(128203) & " COPY ID", 320, 135, 100, 22, &H455A64, &HFFFFFF
+    AB d, "btnCopy", ChrW(9733) & " COPY ID", 320, 135, 100, 22, &H455A64, &HFFFFFF
     d.Controls("btnCopy").Font.Size = 8
 
     ' === Divider ===
